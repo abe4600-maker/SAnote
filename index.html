@@ -1,0 +1,2442 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0284C7" />
+  <title>SA note — 研究・検証ログ管理</title>
+  <style>
+    :root {
+      --bg-app: #F0F9FF;
+      --bg-surface: #FFFFFF;
+      --bg-subtle: #E0F2FE;
+      --bg-header: #0284C7;
+      --bg-header-dark: #0369A1;
+      --primary: #0284C7;
+      --primary-hover: #0369A1;
+      --primary-soft: #E0F2FE;
+      --accent: #0EA5E9;
+      --text-main: #0F172A;
+      --text-sub: #475569;
+      --text-muted: #64748B;
+      --border: #BAE6FD;
+      --border-light: #E2E8F0;
+
+      /* 区分別テーマカラー（実験中=青 / 未着手=黄 / 実験済み=赤 / 保留=緑） */
+      --st-active-color: #0369A1;
+      --st-active-accent: #0284C7;
+      --st-active-bg: #F0F9FF;
+      --st-active-badge-bg: #E0F2FE;
+      --st-active-border: #7DD3FC;
+
+      --st-pending-color: #A16207;
+      --st-pending-accent: #EAB308;
+      --st-pending-bg: #FEFCE8;
+      --st-pending-badge-bg: #FEF9C3;
+      --st-pending-border: #FDE047;
+
+      --st-done-color: #B91C1C;
+      --st-done-accent: #EF4444;
+      --st-done-bg: #FEF2F2;
+      --st-done-badge-bg: #FEE2E2;
+      --st-done-border: #FCA5A5;
+
+      --st-hold-color: #15803D;
+      --st-hold-accent: #22C55E;
+      --st-hold-bg: #F0FDF4;
+      --st-hold-badge-bg: #DCFCE7;
+      --st-hold-border: #86EFAC;
+
+      --danger: #DC2626;
+      --danger-soft: #FEF2F2;
+      --warning: #D97706;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --shadow-sm: 0 1px 3px rgba(2, 132, 199, 0.08);
+      --shadow-md: 0 4px 12px rgba(2, 132, 199, 0.12);
+      --tap-min: 44px;
+      --nav-height: 68px;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: rgba(2, 132, 199, 0.16);
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-app);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;
+      font-size: 15px;
+      line-height: 1.55;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* トップバー */
+    .app-topbar {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: linear-gradient(135deg, var(--primary-hover) 0%, var(--primary) 100%);
+      color: #FFFFFF;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-badge {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 0.06em;
+      background: rgba(255, 255, 255, 0.18);
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      padding: 4px 8px;
+      border-radius: var(--radius-sm);
+    }
+
+    .brand-title {
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .icon-btn {
+      min-width: var(--tap-min);
+      min-height: var(--tap-min);
+      border-radius: var(--radius-sm);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      background: rgba(255, 255, 255, 0.12);
+      color: #FFFFFF;
+      font-size: 12px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      padding: 0 10px;
+      cursor: pointer;
+    }
+
+    .icon-btn:active {
+      background: rgba(255, 255, 255, 0.26);
+    }
+
+    /* メインコンテナ */
+    .main-container {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 14px 14px calc(var(--nav-height) + 28px);
+    }
+
+    .view-section {
+      display: none;
+    }
+
+    .view-section.active {
+      display: block;
+      animation: fadeIn 0.18s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* 日次ページ専用：現在日時バナー */
+    .datetime-hero {
+      background: linear-gradient(160deg, #E0F2FE 0%, #BAE6FD 100%);
+      border: 1px solid #7DD3FC;
+      border-radius: var(--radius-lg);
+      padding: 18px 16px;
+      margin-bottom: 14px;
+      text-align: center;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .datetime-hero-label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      color: var(--primary-hover);
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .datetime-hero-main {
+      font-family: var(--font-mono);
+      font-size: 24px;
+      font-weight: 700;
+      color: #0C4A6E;
+      letter-spacing: 0.02em;
+      line-height: 1.3;
+    }
+
+    /* カード */
+    .card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--bg-subtle);
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #0C4A6E;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 0;
+    }
+
+    .card-code {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      background: var(--bg-subtle);
+      color: var(--primary-hover);
+      padding: 2px 7px;
+      border-radius: 999px;
+      font-weight: 700;
+    }
+
+    /* フォーム要素 */
+    .form-group {
+      margin-bottom: 13px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 5px;
+    }
+
+    .form-hint {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 3px;
+    }
+
+    input[type="text"],
+    input[type="date"],
+    input[type="datetime-local"],
+    select,
+    textarea {
+      width: 100%;
+      min-height: var(--tap-min);
+      padding: 10px 12px;
+      font-size: 15px;
+      font-family: inherit;
+      color: var(--text-main);
+      background-color: #FFFFFF;
+      border: 1.5px solid #CBD5E1;
+      border-radius: var(--radius-sm);
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.16);
+    }
+
+    textarea {
+      min-height: 88px;
+      resize: vertical;
+    }
+
+    .issue-edit-textarea {
+      min-height: 62px;
+      font-size: 14px;
+      background-color: #F8FAFC;
+    }
+
+    .issue-edit-textarea:focus {
+      background-color: #FFFFFF;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    @media (max-width: 480px) {
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ボタン類 */
+    .btn {
+      min-height: var(--tap-min);
+      padding: 0 16px;
+      border-radius: var(--radius-sm);
+      border: 1px solid transparent;
+      font-size: 14px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: background-color 0.15s, transform 0.05s;
+    }
+
+    .btn:active {
+      transform: scale(0.99);
+    }
+
+    .btn-block {
+      width: 100%;
+    }
+
+    .btn-primary {
+      background-color: var(--primary);
+      color: #FFFFFF;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--primary-hover);
+    }
+
+    .btn-secondary {
+      background-color: var(--bg-subtle);
+      color: #0369A1;
+      border-color: var(--border);
+    }
+
+    .btn-secondary:hover {
+      background-color: #BAE6FD;
+    }
+
+    .btn-outline {
+      background-color: #FFFFFF;
+      color: var(--text-main);
+      border-color: #CBD5E1;
+    }
+
+    .btn-outline:hover {
+      background-color: #F8FAFC;
+    }
+
+    .btn-danger {
+      background-color: var(--danger-soft);
+      color: var(--danger);
+      border-color: #FECACA;
+    }
+
+    .btn-sm {
+      min-height: 38px;
+      padding: 0 11px;
+      font-size: 12px;
+    }
+
+    /* ステータスバッジ（実験中=青 / 未着手=黄 / 実験済み=赤 / 保留=緑） */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .badge-未着手 {
+      background: var(--st-pending-badge-bg);
+      color: var(--st-pending-color);
+      border: 1px solid var(--st-pending-border);
+    }
+
+    .badge-実験中 {
+      background: var(--st-active-badge-bg);
+      color: var(--st-active-color);
+      border: 1px solid var(--st-active-border);
+    }
+
+    .badge-実験済み {
+      background: var(--st-done-badge-bg);
+      color: var(--st-done-color);
+      border: 1px solid var(--st-done-border);
+    }
+
+    .badge-保留 {
+      background: var(--st-hold-badge-bg);
+      color: var(--st-hold-color);
+      border: 1px solid var(--st-hold-border);
+    }
+
+    /* 区分ごとのカード・実験エリア色分け */
+    .status-theme-未着手 {
+      background-color: var(--st-pending-bg) !important;
+      border-color: var(--st-pending-border) !important;
+      border-left: 5px solid var(--st-pending-accent) !important;
+    }
+
+    .status-theme-実験中 {
+      background-color: var(--st-active-bg) !important;
+      border-color: var(--st-active-border) !important;
+      border-left: 5px solid var(--st-active-accent) !important;
+    }
+
+    .status-theme-実験済み {
+      background-color: var(--st-done-bg) !important;
+      border-color: var(--st-done-border) !important;
+      border-left: 5px solid var(--st-done-accent) !important;
+    }
+
+    .status-theme-保留 {
+      background-color: var(--st-hold-bg) !important;
+      border-color: var(--st-hold-border) !important;
+      border-left: 5px solid var(--st-hold-accent) !important;
+    }
+
+    .status-accent-未着手 { color: var(--st-pending-color) !important; }
+    .status-accent-実験中 { color: var(--st-active-color) !important; }
+    .status-accent-実験済み { color: var(--st-done-color) !important; }
+    .status-accent-保留 { color: var(--st-hold-color) !important; }
+
+    /* フィルターエリア */
+    .filter-panel {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+
+    .active-period-toggle {
+      width: 100%;
+      min-height: 46px;
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      border: 1.5px solid var(--primary);
+      background: var(--primary-soft);
+      color: #0369A1;
+      font-weight: 700;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      margin-bottom: 10px;
+    }
+
+    .active-period-toggle.is-off {
+      background: #F8FAFC;
+      border-color: #CBD5E1;
+      color: var(--text-sub);
+    }
+
+    .toggle-pill {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: var(--primary);
+      color: #FFFFFF;
+    }
+
+    .active-period-toggle.is-off .toggle-pill {
+      background: #94A3B8;
+    }
+
+    /* 横断抽出：頻出ワードチップ＆抽出結果 */
+    .keyword-chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .keyword-chip {
+      min-height: 36px;
+      padding: 0 11px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: #F8FAFC;
+      color: #0369A1;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .keyword-chip.active {
+      background: var(--primary);
+      color: #FFFFFF;
+      border-color: var(--primary);
+    }
+
+    .extracted-highlights-card {
+      background: #FFFFFF;
+      border: 1.5px solid #7DD3FC;
+      border-radius: var(--radius-md);
+      padding: 14px;
+      margin-bottom: 14px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .excerpt-item {
+      background: #F8FAFC;
+      border: 1px solid var(--border-light);
+      border-left: 4px solid var(--accent);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .excerpt-item:active {
+      background: #E0F2FE;
+    }
+
+    .excerpt-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      font-family: var(--font-mono);
+    }
+
+    .excerpt-field-tag {
+      background: var(--bg-subtle);
+      color: var(--primary-hover);
+      padding: 1px 7px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-family: inherit;
+    }
+
+    mark.search-hit {
+      background: #FEF08A;
+      color: #0F172A;
+      padding: 0 2px;
+      border-radius: 2px;
+      font-weight: 700;
+    }
+
+    /* 仮説一覧カード */
+    .hypo-card {
+      border-radius: var(--radius-md);
+      padding: 14px 15px;
+      margin-bottom: 11px;
+      cursor: pointer;
+      transition: transform 0.08s, box-shadow 0.15s;
+    }
+
+    .hypo-card:hover {
+      box-shadow: var(--shadow-md);
+    }
+
+    .hypo-card:active {
+      transform: scale(0.992);
+    }
+
+    .hypo-card-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .hypo-card-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin: 0;
+    }
+
+    .hypo-meta-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px 10px;
+      font-size: 12px;
+      color: var(--text-sub);
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px dashed rgba(15, 23, 42, 0.14);
+    }
+
+    .hypo-meta-item strong {
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    /* 抽出アイテム（成果・課題） */
+    .extracted-box {
+      background: #F8FAFC;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      margin-bottom: 12px;
+    }
+
+    .extracted-list {
+      list-style: none;
+      margin: 6px 0 0;
+      padding: 0;
+    }
+
+    .extracted-item {
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: var(--radius-sm);
+      padding: 9px 11px;
+      margin-bottom: 8px;
+      font-size: 13px;
+    }
+
+    .extracted-item-meta {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .extracted-item-action {
+      margin-top: 8px;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    /* アコーディオン */
+    .accordion {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--bg-surface);
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+
+    .accordion-trigger {
+      width: 100%;
+      min-height: 48px;
+      padding: 12px 15px;
+      background: var(--bg-subtle);
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 14px;
+      font-weight: 700;
+      color: #0C4A6E;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .accordion-body {
+      display: none;
+      padding: 14px 15px;
+    }
+
+    .accordion.open .accordion-body {
+      display: block;
+    }
+
+    .accordion-chevron {
+      transition: transform 0.2s;
+      font-size: 12px;
+    }
+
+    .accordion.open .accordion-chevron {
+      transform: rotate(180deg);
+    }
+
+    /* 日次ログアイテム */
+    .log-item {
+      border: 1px solid var(--border-light);
+      background: rgba(255, 255, 255, 0.85);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+
+    .log-item-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .log-item-time {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--primary-hover);
+    }
+
+    .log-kv {
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
+
+    .log-kv-label {
+      font-weight: 700;
+      color: #0369A1;
+      margin-right: 4px;
+    }
+
+    .action-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    /* 下部固定ナビゲーション（5タブ対応） */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: var(--nav-height);
+      background: #FFFFFF;
+      border-top: 1.5px solid var(--border);
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      z-index: 40;
+      box-shadow: 0 -2px 10px rgba(2, 132, 199, 0.08);
+    }
+
+    .nav-btn {
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-family: inherit;
+      font-size: 10.5px;
+      font-weight: 700;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      cursor: pointer;
+      padding: 4px 1px;
+      min-height: var(--tap-min);
+      white-space: nowrap;
+    }
+
+    .nav-btn .nav-icon {
+      font-size: 17px;
+      line-height: 1;
+    }
+
+    .nav-btn.active {
+      color: var(--primary);
+      background: var(--bg-app);
+    }
+
+    /* モーダル */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.52);
+      z-index: 60;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal-box {
+      width: 100%;
+      max-width: 540px;
+      max-height: 88vh;
+      overflow-y: auto;
+      background: #FFFFFF;
+      border-radius: var(--radius-lg);
+      padding: 18px;
+      box-shadow: 0 12px 32px rgba(15, 23, 42, 0.25);
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .modal-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #0C4A6E;
+      margin: 0;
+    }
+
+    /* トースト通知 */
+    .toast {
+      position: fixed;
+      bottom: calc(var(--nav-height) + 14px);
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #0C4A6E;
+      color: #FFFFFF;
+      padding: 10px 18px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s, transform 0.2s;
+      z-index: 80;
+      white-space: nowrap;
+      box-shadow: var(--shadow-md);
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 28px 16px;
+      color: var(--text-muted);
+      font-size: 14px;
+      background: var(--bg-surface);
+      border: 1px dashed var(--border);
+      border-radius: var(--radius-md);
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--border-light);
+      margin: 14px 0;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- トップバー -->
+  <header class="app-topbar">
+    <div class="brand-group">
+      <span class="brand-badge">LAB LOG</span>
+      <span class="brand-title">SA note</span>
+    </div>
+    <div class="topbar-actions">
+      <button type="button" class="icon-btn" id="btnOpenBackup" title="バックアップ・復元">
+        <span>💾 保存/読込</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- メインコンテンツ -->
+  <main class="main-container">
+
+    <!-- ① 日次ページ（初期画面） -->
+    <section id="view-daily" class="view-section active" aria-label="日次ページ">
+      <!-- 日時だけが表示されるヘッダー -->
+      <div class="datetime-hero" aria-live="polite">
+        <div class="datetime-hero-label">CURRENT TIMESTAMP</div>
+        <div id="heroNowDisplay" class="datetime-hero-main">----/--/-- --:--:--</div>
+      </div>
+
+      <!-- 実施中の実験結果の登録 -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">🧪 実施中の実験結果を登録</h2>
+          <span class="card-code">DAILY LOG</span>
+        </div>
+        <form id="dailyLogForm">
+          <div class="form-group">
+            <label class="form-label" for="dailyHypoSelect">対象の仮説（実験中）</label>
+            <select id="dailyHypoSelect" required></select>
+            <div id="noActiveHypoNotice" class="form-hint" style="display:none; color:var(--warning); font-weight:600;">
+              ※「実験中」の仮説がありません。「仮説登録」タブから登録するか、仮説詳細からステータスを「実験中」に変更してください。
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="dailyLogDate">記録日時</label>
+            <input type="datetime-local" id="dailyLogDate" required />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="dailyResultInput">結果（事実・測定値・観察内容）</label>
+            <textarea id="dailyResultInput" placeholder="例：〇〇の条件で3回試行し、数値は平均12.4となった"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="dailyOutcomeInput">成果（うまくいったこと・前進）</label>
+            <textarea id="dailyOutcomeInput" placeholder="例：手順Aを導入したことで再現性が安定した"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="dailyIssueInput">課題（ボトルネック・次の検証テーマ）</label>
+            <textarea id="dailyIssueInput" placeholder="例：高負荷時に処理時間が延びる要因を特定する必要がある"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="dailyOtherInput">その他（メモ・環境条件など）</label>
+            <input type="text" id="dailyOtherInput" placeholder="例：室温21℃、使用端末iPhone" />
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block">実験結果を記録する</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- ② クイック仮説登録ページ（独立タブ） -->
+    <section id="view-register" class="view-section" aria-label="仮説登録ページ">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">💡 クイック仮説登録</h2>
+          <span class="card-code">HYPOTHESIS</span>
+        </div>
+        <form id="quickHypoForm">
+          <div class="grid-2">
+            <div class="form-group">
+              <label class="form-label" for="quickHypoDate">発生日</label>
+              <input type="datetime-local" id="quickHypoDate" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="quickHypoStatus">区分</label>
+              <select id="quickHypoStatus">
+                <option value="未着手">未着手（黄色）</option>
+                <option value="実験中" selected>実験中（青）</option>
+                <option value="実験済み">実験済み（赤）</option>
+                <option value="保留">保留（緑）</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="quickHypoTitle">仮説タイトル</label>
+            <input type="text" id="quickHypoTitle" placeholder="例：朝一番の検証ルーティンで集中力が上がるか" required />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="quickHypoContent">仮説内容</label>
+            <textarea id="quickHypoContent" placeholder="検証したい前提・予測・理由を記述"></textarea>
+          </div>
+
+          <div class="accordion" id="quickExpAccordion">
+            <button type="button" class="accordion-trigger" id="btnToggleQuickExp">
+              <span>🔬 実験計画もあわせて設定する（任意）</span>
+              <span class="accordion-chevron">▼</span>
+            </button>
+            <div class="accordion-body">
+              <div class="grid-2">
+                <div class="form-group">
+                  <label class="form-label" for="quickExpStart">実験開始日時</label>
+                  <input type="datetime-local" id="quickExpStart" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="quickExpEnd">実験終了日時</label>
+                  <input type="datetime-local" id="quickExpEnd" />
+                </div>
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label" for="quickExpContent">実験実施内容</label>
+                <textarea id="quickExpContent" placeholder="具体的な実験手順や条件"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block">仮説を登録する</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- ③ 仮説一覧・横断抽出ページ -->
+    <section id="view-list" class="view-section" aria-label="仮説一覧ページ">
+      <div class="filter-panel">
+        <button type="button" id="btnActivePeriodFilter" class="active-period-toggle">
+          <span>⏱ 現在の実験期間中のものだけ表示（開始 ≦ 今 ≦ 終了）</span>
+          <span id="activePeriodBadge" class="toggle-pill">ON</span>
+        </button>
+
+        <div class="form-group">
+          <label class="form-label" for="listSearchInput">キーワード横断検索・抽出</label>
+          <div style="display:flex; gap:6px;">
+            <input type="text" id="listSearchInput" placeholder="キーワードで仮説＆日次ログ（結果/成果/課題）を抽出" />
+            <button type="button" id="btnClearSearch" class="btn btn-outline btn-sm" title="検索クリア">クリア</button>
+          </div>
+          <div id="frequentKeywordsArea" class="keyword-chip-row"></div>
+        </div>
+
+        <div class="grid-2" style="margin-bottom:0;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label" for="listStatusFilter">区分で絞り込み</label>
+            <select id="listStatusFilter">
+              <option value="ALL">すべての区分</option>
+              <option value="未着手">未着手（黄色）</option>
+              <option value="実験中">実験中（青）</option>
+              <option value="実験済み">実験済み（赤）</option>
+              <option value="保留">保留（緑）</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label" for="listExtractFieldFilter">ログ抽出対象</label>
+            <select id="listExtractFieldFilter">
+              <option value="ALL">全項目（結果/成果/課題/その他/総括）</option>
+              <option value="outcome">成果のみ</option>
+              <option value="issue">課題のみ</option>
+              <option value="result">結果のみ</option>
+              <option value="conclusion">最終成果・考察のみ</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top:10px; margin-bottom:0;">
+          <label class="form-label" for="listSortSelect">並び順</label>
+          <select id="listSortSelect">
+            <option value="occ_desc">発生日が新しい順</option>
+            <option value="occ_asc">発生日が古い順</option>
+            <option value="end_asc">実験終了日が近い順</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 横断抽出されたログ箇所ピックアップ -->
+      <div id="extractedExcerptsContainer"></div>
+
+      <div id="listCountBar" style="font-size:12px; color:var(--text-sub); margin-bottom:8px; font-weight:700;"></div>
+      <div id="hypothesisListContainer"></div>
+    </section>
+
+    <!-- ④ 実験完了・総括ページ -->
+    <section id="view-complete" class="view-section" aria-label="実験完了・総括ページ">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">🏁 実験完了・総括と次期仮説化</h2>
+          <span class="card-code">REVIEW</span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="completeHypoSelect">対象の仮説を選択</label>
+          <select id="completeHypoSelect"></select>
+        </div>
+
+        <div id="completeWorkspace" style="display:none;">
+          <div class="grid-2">
+            <div class="form-group">
+              <label class="form-label" for="completeDateInput">完了日（初期値：現在日時）</label>
+              <input type="datetime-local" id="completeDateInput" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="completeStatusSelect">登録後の区分</label>
+              <select id="completeStatusSelect">
+                <option value="実験済み" selected>実験済み（赤）</option>
+                <option value="実験中">実験中（青）</option>
+                <option value="保留">保留（緑）</option>
+                <option value="未着手">未着手（黄色）</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- 自動抽出：日々の結果からの成果 -->
+          <div class="extracted-box">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+              <strong style="font-size:13px; color:#0C4A6E;">✨ 日々の結果から抽出した「成果」</strong>
+              <button type="button" class="btn btn-secondary btn-sm" id="btnAppendExtractedOutcomes">↓ 最終成果へ反映</button>
+            </div>
+            <ul id="extractedOutcomeList" class="extracted-list"></ul>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="finalOutcomeInput">最終成果</label>
+            <textarea id="finalOutcomeInput" placeholder="各結果の成果をもとに最終成果を整理・記述"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="finalSummaryInput">まとめと考察</label>
+            <textarea id="finalSummaryInput" placeholder="実験全体の振り返り、仮説の成否、考察を記述"></textarea>
+          </div>
+
+          <button type="button" id="btnSaveCompletion" class="btn btn-primary btn-block">
+            完了日を登録し、最終成果・考察を保存する
+          </button>
+
+          <div class="divider"></div>
+
+          <!-- 自動抽出：日々の結果からの課題（編集して新規仮説登録） -->
+          <div class="extracted-box" style="background:#F0F9FF; border-color:#BAE6FD;">
+            <strong style="font-size:13px; color:#0C4A6E;">🧩 抽出された「課題」を編集して新しい仮説を登録</strong>
+            <div class="form-hint">課題文を直接編集してから「この課題を新しい仮説として登録」を押すと、確認モーダルを経て新規仮説（未着手・現在日時）として追加されます。</div>
+            <ul id="extractedIssueList" class="extracted-list"></ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ⑤ 仮説詳細ページ -->
+    <section id="view-detail" class="view-section" aria-label="仮説詳細ページ">
+      <div style="margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+        <button type="button" id="btnBackToList" class="btn btn-outline btn-sm">← 仮説一覧に戻る</button>
+        <span id="detailHypoIdBadge" style="font-family:var(--font-mono); font-size:11px; color:var(--text-muted);"></span>
+      </div>
+      <div id="detailContentContainer"></div>
+    </section>
+
+  </main>
+
+  <!-- 下部固定ナビゲーション（5タブ） -->
+  <nav class="bottom-nav" aria-label="メインナビゲーション">
+    <button type="button" class="nav-btn active" data-view="view-daily">
+      <span class="nav-icon">🗓</span>
+      <span>日次</span>
+    </button>
+    <button type="button" class="nav-btn" data-view="view-register">
+      <span class="nav-icon">💡</span>
+      <span>仮説登録</span>
+    </button>
+    <button type="button" class="nav-btn" data-view="view-list">
+      <span class="nav-icon">📋</span>
+      <span>仮説一覧</span>
+    </button>
+    <button type="button" class="nav-btn" data-view="view-complete">
+      <span class="nav-icon">🏁</span>
+      <span>完了・総括</span>
+    </button>
+    <button type="button" class="nav-btn" data-view="view-detail">
+      <span class="nav-icon">🔬</span>
+      <span>仮説詳細</span>
+    </button>
+  </nav>
+
+  <!-- 汎用編集・追加モーダル -->
+  <div id="modalBackdrop" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="modalTitle" class="modal-title">編集</h3>
+        <button type="button" id="btnCloseModal" class="btn btn-outline btn-sm">✕</button>
+      </div>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <!-- トースト通知 -->
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      // =========================================================================
+      // 1. ストレージ定数・永続化（コード修正後もデータを安全に保持）
+      // =========================================================================
+      const STORAGE_KEY = "sa_note_data_v1";
+      const LEGACY_KEYS = ["sa_note_data", "sa_note_v0"];
+      const SCHEMA_VERSION = 1;
+
+      function createInitialStore() {
+        return {
+          version: SCHEMA_VERSION,
+          hypotheses: []
+        };
+      }
+
+      function normalizeHypothesis(raw) {
+        if (!raw || typeof raw !== "object") return null;
+        const expRaw = raw.experiment && typeof raw.experiment === "object" ? raw.experiment : {};
+        const logsRaw = Array.isArray(raw.dailyLogs) ? raw.dailyLogs : [];
+        const concRaw = raw.conclusion && typeof raw.conclusion === "object" ? raw.conclusion : {};
+
+        return {
+          id: String(raw.id || generateId("hyp")),
+          occurredAt: String(raw.occurredAt || getNowDateTimeLocal()),
+          title: String(raw.title || "無題の仮説"),
+          content: String(raw.content || ""),
+          status: ["未着手", "実験中", "実験済み", "保留"].includes(raw.status) ? raw.status : "未着手",
+          experiment: {
+            startDate: expRaw.startDate ? String(expRaw.startDate) : "",
+            endDate: expRaw.endDate ? String(expRaw.endDate) : "",
+            content: String(expRaw.content || ""),
+            completedAt: expRaw.completedAt ? String(expRaw.completedAt) : ""
+          },
+          dailyLogs: logsRaw.map((l) => ({
+            id: String(l.id || generateId("log")),
+            recordedAt: String(l.recordedAt || getNowDateTimeLocal()),
+            result: String(l.result || ""),
+            outcome: String(l.outcome || ""),
+            issue: String(l.issue || ""),
+            other: String(l.other || "")
+          })),
+          conclusion: {
+            finalOutcome: String(concRaw.finalOutcome || ""),
+            summary: String(concRaw.summary || ""),
+            updatedAt: String(concRaw.updatedAt || "")
+          }
+        };
+      }
+
+      function loadStore() {
+        let rawText = localStorage.getItem(STORAGE_KEY);
+        if (!rawText) {
+          for (const k of LEGACY_KEYS) {
+            const legacy = localStorage.getItem(k);
+            if (legacy) {
+              rawText = legacy;
+              break;
+            }
+          }
+        }
+        if (!rawText) {
+          const fresh = createInitialStore();
+          saveStore(fresh);
+          return fresh;
+        }
+        try {
+          const parsed = JSON.parse(rawText);
+          const list = Array.isArray(parsed)
+            ? parsed
+            : Array.isArray(parsed.hypotheses)
+              ? parsed.hypotheses
+              : [];
+          const normalized = {
+            version: SCHEMA_VERSION,
+            hypotheses: list.map(normalizeHypothesis).filter(Boolean)
+          };
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+          return normalized;
+        } catch (e) {
+          console.error("データ読み込みエラー:", e);
+          return createInitialStore();
+        }
+      }
+
+      function saveStore(data) {
+        const payload = {
+          version: SCHEMA_VERSION,
+          hypotheses: Array.isArray(data.hypotheses) ? data.hypotheses : []
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      }
+
+      let store = loadStore();
+
+      const appState = {
+        currentView: "view-daily",
+        selectedHypothesisId: store.hypotheses[0] ? store.hypotheses[0].id : null,
+        activePeriodOnly: true
+      };
+
+      // =========================================================================
+      // 2. 日時・ユーティリティ関数
+      // =========================================================================
+      function generateId(prefix) {
+        return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
+      }
+
+      function getNowDateTimeLocal() {
+        const now = new Date();
+        const pad = (n) => String(n).padStart(2, "0");
+        return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+      }
+
+      function formatHeroNow() {
+        const now = new Date();
+        const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
+        const pad = (n) => String(n).padStart(2, "0");
+        const y = now.getFullYear();
+        const m = pad(now.getMonth() + 1);
+        const d = pad(now.getDate());
+        const w = weekdays[now.getDay()];
+        const hh = pad(now.getHours());
+        const mm = pad(now.getMinutes());
+        const ss = pad(now.getSeconds());
+        return `${y}/${m}/${d} (${w}) ${hh}:${mm}:${ss}`;
+      }
+
+      function formatDisplayDateTime(dtStr) {
+        if (!dtStr) return "未設定";
+        const d = new Date(dtStr);
+        if (Number.isNaN(d.getTime())) return dtStr;
+        const pad = (n) => String(n).padStart(2, "0");
+        return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      }
+
+      function formatPeriod(startStr, endStr) {
+        if (!startStr && !endStr) return "未設定";
+        const s = startStr ? formatDisplayDateTime(startStr) : "開始未定";
+        const e = endStr ? formatDisplayDateTime(endStr) : "終了未定";
+        return `${s} 〜 ${e}`;
+      }
+
+      function isWithinCurrentExperimentPeriod(hypo) {
+        const exp = hypo.experiment || {};
+        if (!exp.startDate || !exp.endDate) return false;
+        const nowTs = Date.now();
+        const startTs = new Date(exp.startDate).getTime();
+        const endTs = new Date(exp.endDate).getTime();
+        if (Number.isNaN(startTs) || Number.isNaN(endTs)) return false;
+        return startTs <= nowTs && nowTs <= endTs;
+      }
+
+      function escapeHtml(str) {
+        return String(str || "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function nl2brSafe(str) {
+        return escapeHtml(str).replace(/\r?\n/g, "<br>");
+      }
+
+      function highlightTextHtml(text, query) {
+        const safe = escapeHtml(text || "");
+        if (!query) return safe.replace(/\r?\n/g, "<br>");
+        const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const re = new RegExp(`(${escapedQuery})`, "gi");
+        return safe.replace(re, `<mark class="search-hit">$1</mark>`).replace(/\r?\n/g, "<br>");
+      }
+
+      let toastTimer = null;
+      function showToast(message) {
+        const el = document.getElementById("toast");
+        el.textContent = message;
+        el.classList.add("show");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => {
+          el.classList.remove("show");
+        }, 2400);
+      }
+
+      function findHypothesisById(id) {
+        return store.hypotheses.find((h) => h.id === id) || null;
+      }
+
+      // =========================================================================
+      // 3. 画面切り替え・初期値セット
+      // =========================================================================
+      function switchView(viewId, targetHypoId) {
+        if (targetHypoId) {
+          appState.selectedHypothesisId = targetHypoId;
+        }
+        appState.currentView = viewId;
+
+        document.querySelectorAll(".view-section").forEach((sec) => {
+          sec.classList.toggle("active", sec.id === viewId);
+        });
+
+        document.querySelectorAll(".nav-btn").forEach((btn) => {
+          btn.classList.toggle("active", btn.dataset.view === viewId);
+        });
+
+        if (viewId === "view-daily") {
+          refreshDailyForm();
+        } else if (viewId === "view-register") {
+          refreshRegisterForm();
+        } else if (viewId === "view-list") {
+          renderHypothesisList();
+        } else if (viewId === "view-complete") {
+          refreshCompleteView();
+        } else if (viewId === "view-detail") {
+          renderDetailView();
+        }
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+
+      document.querySelectorAll(".nav-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          switchView(btn.dataset.view);
+        });
+      });
+
+      document.getElementById("btnBackToList").addEventListener("click", () => {
+        switchView("view-list");
+      });
+
+      // =========================================================================
+      // 4. ① 日次ページ & ② 仮説登録ページ
+      // =========================================================================
+      function updateHeroClock() {
+        const el = document.getElementById("heroNowDisplay");
+        if (el) el.textContent = formatHeroNow();
+      }
+
+      function refreshDailyForm() {
+        const nowLocal = getNowDateTimeLocal();
+        document.getElementById("dailyLogDate").value = nowLocal;
+
+        const select = document.getElementById("dailyHypoSelect");
+        const notice = document.getElementById("noActiveHypoNotice");
+        const activeHypos = store.hypotheses.filter((h) => h.status === "実験中");
+
+        select.innerHTML = "";
+        if (activeHypos.length === 0) {
+          notice.style.display = "block";
+          const opt = document.createElement("option");
+          opt.value = "";
+          opt.textContent = "（実験中の仮説がありません）";
+          select.appendChild(opt);
+        } else {
+          notice.style.display = "none";
+          activeHypos.forEach((h) => {
+            const opt = document.createElement("option");
+            opt.value = h.id;
+            opt.textContent = `${h.title}（発生：${formatDisplayDateTime(h.occurredAt)}）`;
+            select.appendChild(opt);
+          });
+        }
+      }
+
+      function refreshRegisterForm() {
+        const nowLocal = getNowDateTimeLocal();
+        document.getElementById("quickHypoDate").value = nowLocal;
+        document.getElementById("quickExpStart").value = nowLocal;
+      }
+
+      document.getElementById("btnToggleQuickExp").addEventListener("click", () => {
+        document.getElementById("quickExpAccordion").classList.toggle("open");
+      });
+
+      document.getElementById("dailyLogForm").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const hypoId = document.getElementById("dailyHypoSelect").value;
+        if (!hypoId) {
+          showToast("対象の「実験中」仮説を選択してください");
+          return;
+        }
+        const hypo = findHypothesisById(hypoId);
+        if (!hypo) return;
+
+        const recordedAt = document.getElementById("dailyLogDate").value || getNowDateTimeLocal();
+        const result = document.getElementById("dailyResultInput").value.trim();
+        const outcome = document.getElementById("dailyOutcomeInput").value.trim();
+        const issue = document.getElementById("dailyIssueInput").value.trim();
+        const other = document.getElementById("dailyOtherInput").value.trim();
+
+        if (!result && !outcome && !issue && !other) {
+          showToast("結果・成果・課題・その他のいずれかを入力してください");
+          return;
+        }
+
+        hypo.dailyLogs.unshift({
+          id: generateId("log"),
+          recordedAt,
+          result,
+          outcome,
+          issue,
+          other
+        });
+
+        saveStore(store);
+        document.getElementById("dailyResultInput").value = "";
+        document.getElementById("dailyOutcomeInput").value = "";
+        document.getElementById("dailyIssueInput").value = "";
+        document.getElementById("dailyOtherInput").value = "";
+        document.getElementById("dailyLogDate").value = getNowDateTimeLocal();
+        showToast("実験結果を保存しました");
+      });
+
+      document.getElementById("quickHypoForm").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const occurredAt = document.getElementById("quickHypoDate").value || getNowDateTimeLocal();
+        const status = document.getElementById("quickHypoStatus").value;
+        const title = document.getElementById("quickHypoTitle").value.trim();
+        const content = document.getElementById("quickHypoContent").value.trim();
+        const startDate = document.getElementById("quickExpStart").value;
+        const endDate = document.getElementById("quickExpEnd").value;
+        const expContent = document.getElementById("quickExpContent").value.trim();
+
+        if (!title) return;
+
+        const newHypo = normalizeHypothesis({
+          id: generateId("hyp"),
+          occurredAt,
+          title,
+          content,
+          status,
+          experiment: {
+            startDate,
+            endDate,
+            content: expContent,
+            completedAt: ""
+          },
+          dailyLogs: [],
+          conclusion: {
+            finalOutcome: "",
+            summary: "",
+            updatedAt: ""
+          }
+        });
+
+        store.hypotheses.unshift(newHypo);
+        appState.selectedHypothesisId = newHypo.id;
+        saveStore(store);
+
+        document.getElementById("quickHypoTitle").value = "";
+        document.getElementById("quickHypoContent").value = "";
+        document.getElementById("quickExpContent").value = "";
+        document.getElementById("quickExpEnd").value = "";
+        refreshRegisterForm();
+        showToast("新しい仮説を登録しました");
+      });
+
+      // =========================================================================
+      // 5. ③ 仮説一覧・横断抽出ページ（キーワード横断抽出＆頻出ワードチップ）
+      // =========================================================================
+      function updateActivePeriodButtonUI() {
+        const btn = document.getElementById("btnActivePeriodFilter");
+        const badge = document.getElementById("activePeriodBadge");
+        if (appState.activePeriodOnly) {
+          btn.classList.remove("is-off");
+          badge.textContent = "ON";
+        } else {
+          btn.classList.add("is-off");
+          badge.textContent = "ALL";
+        }
+      }
+
+      // 頻出キーワード自動抽出（2文字以上のカタカナ・漢字・英数字語句を集計）
+      function extractTopKeywords(hypotheses, limit = 8) {
+        const stopWords = new Set([
+          "こと", "もの", "ため", "よう", "ところ", "場合", "結果", "成果", "課題", "その他",
+          "仮説", "実験", "確認", "実施", "検証", "対応", "必要", "可能", "状況", "状態",
+          "内容", "日時", "期間", "完了", "発生", "考察", "まとめ"
+        ]);
+        const counts = new Map();
+
+        hypotheses.forEach((h) => {
+          const texts = [
+            h.title,
+            h.content,
+            h.experiment?.content || "",
+            h.conclusion?.finalOutcome || "",
+            h.conclusion?.summary || ""
+          ];
+          (h.dailyLogs || []).forEach((l) => {
+            texts.push(l.result, l.outcome, l.issue, l.other);
+          });
+
+          texts.join(" ").split(/[\s、。・,，.．!！?？「」『』（）()【】\[\]：:;/／\n\r]+/).forEach((tok) => {
+            const clean = tok.trim();
+            if (clean.length < 2 || clean.length > 14) return;
+            if (/^[0-9０-９]+$/.test(clean)) return;
+            if (stopWords.has(clean)) return;
+            counts.set(clean, (counts.get(clean) || 0) + 1);
+          });
+        });
+
+        return Array.from(counts.entries())
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, limit);
+      }
+
+      function renderKeywordChips(hypotheses, currentQuery) {
+        const area = document.getElementById("frequentKeywordsArea");
+        const topWords = extractTopKeywords(hypotheses, 8);
+        if (topWords.length === 0) {
+          area.innerHTML = "";
+          return;
+        }
+        const qLower = currentQuery.toLowerCase();
+        area.innerHTML = topWords
+          .map(([word, count]) => {
+            const isActive = qLower && word.toLowerCase() === qLower;
+            return `<button type="button" class="keyword-chip ${isActive ? "active" : ""}" data-word="${escapeHtml(word)}">#${escapeHtml(word)} (${count})</button>`;
+          })
+          .join("");
+
+        area.querySelectorAll(".keyword-chip").forEach((chip) => {
+          chip.addEventListener("click", () => {
+            const input = document.getElementById("listSearchInput");
+            const clickedWord = chip.dataset.word;
+            if (input.value.trim().toLowerCase() === clickedWord.toLowerCase()) {
+              input.value = "";
+            } else {
+              input.value = clickedWord;
+            }
+            renderHypothesisList();
+          });
+        });
+      }
+
+      // 横断ログ箇所抽出（該当するログや総括の抜粋をリスト化）
+      function collectMatchedExcerpts(hypotheses, query, fieldFilter) {
+        if (!query && fieldFilter === "ALL") return [];
+        const qLower = query.toLowerCase();
+        const excerpts = [];
+
+        const fieldLabels = {
+          result: "結果",
+          outcome: "成果",
+          issue: "課題",
+          other: "その他",
+          finalOutcome: "最終成果",
+          summary: "まとめ・考察"
+        };
+
+        hypotheses.forEach((h) => {
+          // 日次ログから抽出
+          (h.dailyLogs || []).forEach((log) => {
+            const targetKeys =
+              fieldFilter === "ALL"
+                ? ["result", "outcome", "issue", "other"]
+                : fieldFilter === "conclusion"
+                  ? []
+                  : [fieldFilter];
+
+            targetKeys.forEach((k) => {
+              const val = String(log[k] || "").trim();
+              if (!val) return;
+              if (!qLower || val.toLowerCase().includes(qLower)) {
+                excerpts.push({
+                  hypoId: h.id,
+                  hypoTitle: h.title,
+                  status: h.status,
+                  fieldLabel: fieldLabels[k] || k,
+                  timeLabel: formatDisplayDateTime(log.recordedAt),
+                  text: val
+                });
+              }
+            });
+          });
+
+          // 最終成果・考察から抽出
+          if (fieldFilter === "ALL" || fieldFilter === "conclusion") {
+            ["finalOutcome", "summary"].forEach((ck) => {
+              const val = String(h.conclusion?.[ck] || "").trim();
+              if (!val) return;
+              if (!qLower || val.toLowerCase().includes(qLower)) {
+                excerpts.push({
+                  hypoId: h.id,
+                  hypoTitle: h.title,
+                  status: h.status,
+                  fieldLabel: fieldLabels[ck],
+                  timeLabel: h.conclusion?.updatedAt ? formatDisplayDateTime(h.conclusion.updatedAt) : "総括",
+                  text: val
+                });
+              }
+            });
+          }
+        });
+
+        return excerpts;
+      }
+
+      document.getElementById("btnActivePeriodFilter").addEventListener("click", () => {
+        appState.activePeriodOnly = !appState.activePeriodOnly;
+        updateActivePeriodButtonUI();
+        renderHypothesisList();
+      });
+
+      document.getElementById("btnClearSearch").addEventListener("click", () => {
+        document.getElementById("listSearchInput").value = "";
+        document.getElementById("listExtractFieldFilter").value = "ALL";
+        renderHypothesisList();
+      });
+
+      document.getElementById("listSearchInput").addEventListener("input", renderHypothesisList);
+      document.getElementById("listStatusFilter").addEventListener("change", renderHypothesisList);
+      document.getElementById("listExtractFieldFilter").addEventListener("change", renderHypothesisList);
+      document.getElementById("listSortSelect").addEventListener("change", renderHypothesisList);
+
+      function renderHypothesisList() {
+        updateActivePeriodButtonUI();
+        const query = document.getElementById("listSearchInput").value.trim();
+        const qLower = query.toLowerCase();
+        const statusFilter = document.getElementById("listStatusFilter").value;
+        const fieldFilter = document.getElementById("listExtractFieldFilter").value;
+        const sortType = document.getElementById("listSortSelect").value;
+
+        const excerptsContainer = document.getElementById("extractedExcerptsContainer");
+        const container = document.getElementById("hypothesisListContainer");
+        const countBar = document.getElementById("listCountBar");
+
+        renderKeywordChips(store.hypotheses, query);
+
+        let list = store.hypotheses.slice();
+
+        if (appState.activePeriodOnly) {
+          list = list.filter((h) => isWithinCurrentExperimentPeriod(h));
+        }
+
+        if (statusFilter !== "ALL") {
+          list = list.filter((h) => h.status === statusFilter);
+        }
+
+        if (qLower) {
+          list = list.filter((h) => {
+            const inHypo = `${h.title} ${h.content} ${h.experiment?.content || ""}`.toLowerCase().includes(qLower);
+            const inLogs = (h.dailyLogs || []).some((l) =>
+              `${l.result} ${l.outcome} ${l.issue} ${l.other}`.toLowerCase().includes(qLower)
+            );
+            const inConc = `${h.conclusion?.finalOutcome || ""} ${h.conclusion?.summary || ""}`
+              .toLowerCase()
+              .includes(qLower);
+            return inHypo || inLogs || inConc;
+          });
+        }
+
+        // 横断抽出されたログ箇所の表示
+        const excerpts = collectMatchedExcerpts(list, query, fieldFilter);
+        if (query || fieldFilter !== "ALL") {
+          if (excerpts.length === 0) {
+            excerptsContainer.innerHTML = `
+              <div class="extracted-highlights-card">
+                <div class="card-header" style="margin-bottom:6px; padding-bottom:6px;">
+                  <h3 class="card-title">🔎 横断抽出されたログ箇所（0件）</h3>
+                </div>
+                <div class="form-hint">該当する記述はありませんでした。</div>
+              </div>
+            `;
+          } else {
+            excerptsContainer.innerHTML = `
+              <div class="extracted-highlights-card">
+                <div class="card-header" style="margin-bottom:8px; padding-bottom:6px;">
+                  <h3 class="card-title">🔎 横断抽出されたログ箇所（${excerpts.length}件）</h3>
+                  <span class="card-code">EXTRACT</span>
+                </div>
+                ${excerpts
+                  .slice(0, 20)
+                  .map(
+                    (ex) => `
+                    <div class="excerpt-item" data-hypo-id="${escapeHtml(ex.hypoId)}">
+                      <div class="excerpt-meta">
+                        <span><span class="excerpt-field-tag">${escapeHtml(ex.fieldLabel)}</span> ${escapeHtml(ex.timeLabel)}</span>
+                        <span>${escapeHtml(ex.hypoTitle)}</span>
+                      </div>
+                      <div>${highlightTextHtml(ex.text, query)}</div>
+                    </div>
+                  `
+                  )
+                  .join("")}
+                ${excerpts.length > 20 ? `<div class="form-hint">※先頭20件を表示中（全${excerpts.length}件）</div>` : ""}
+              </div>
+            `;
+
+            excerptsContainer.querySelectorAll(".excerpt-item").forEach((el) => {
+              el.addEventListener("click", () => {
+                switchView("view-detail", el.dataset.hypoId);
+              });
+            });
+          }
+        } else {
+          excerptsContainer.innerHTML = "";
+        }
+
+        list.sort((a, b) => {
+          if (sortType === "occ_asc") {
+            return String(a.occurredAt).localeCompare(String(b.occurredAt));
+          }
+          if (sortType === "end_asc") {
+            const ea = a.experiment?.endDate || "9999-12-31T23:59";
+            const eb = b.experiment?.endDate || "9999-12-31T23:59";
+            return String(ea).localeCompare(String(eb));
+          }
+          return String(b.occurredAt).localeCompare(String(a.occurredAt));
+        });
+
+        countBar.textContent = appState.activePeriodOnly
+          ? `仮説カード：${list.length}件（現在の実験期間内のみ絞り込み中）`
+          : `仮説カード：${list.length}件（全期間対象）`;
+
+        if (list.length === 0) {
+          container.innerHTML = appState.activePeriodOnly
+            ? `<div class="empty-state">現在の実験期間に該当する仮説はありません。<br>上の「ON」をタップすると全仮説を表示できます。</div>`
+            : `<div class="empty-state">条件に一致する仮説が見つかりませんでした。</div>`;
+          return;
+        }
+
+        container.innerHTML = list
+          .map((h) => {
+            const exp = h.experiment || {};
+            const st = escapeHtml(h.status);
+            return `
+              <article class="hypo-card status-theme-${st}" data-id="${escapeHtml(h.id)}">
+                <div class="hypo-card-top">
+                  <h3 class="hypo-card-title">${highlightTextHtml(h.title, query)}</h3>
+                  <span class="badge badge-${st}">${st}</span>
+                </div>
+                ${exp.content ? `<div style="font-size:13px; color:var(--text-main); margin-top:4px;"><strong class="status-accent-${st}">実験内容：</strong>${highlightTextHtml(exp.content, query)}</div>` : ""}
+                <div class="hypo-meta-grid">
+                  <div class="hypo-meta-item"><strong>発生日：</strong>${escapeHtml(formatDisplayDateTime(h.occurredAt))}</div>
+                  <div class="hypo-meta-item"><strong>完了日：</strong>${escapeHtml(exp.completedAt ? formatDisplayDateTime(exp.completedAt) : "未完了")}</div>
+                  <div class="hypo-meta-item" style="grid-column: 1 / -1;"><strong>実験期間：</strong>${escapeHtml(formatPeriod(exp.startDate, exp.endDate))}</div>
+                </div>
+              </article>
+            `;
+          })
+          .join("");
+
+        container.querySelectorAll(".hypo-card").forEach((card) => {
+          card.addEventListener("click", () => {
+            switchView("view-detail", card.dataset.id);
+          });
+        });
+      }
+
+      // =========================================================================
+      // 6. ④ 実験完了・総括ページ
+      // =========================================================================
+      const completeSelect = document.getElementById("completeHypoSelect");
+      completeSelect.addEventListener("change", () => {
+        appState.selectedHypothesisId = completeSelect.value;
+        renderCompleteWorkspace();
+      });
+
+      function refreshCompleteView() {
+        const list = store.hypotheses;
+        completeSelect.innerHTML = "";
+        if (list.length === 0) {
+          const opt = document.createElement("option");
+          opt.value = "";
+          opt.textContent = "仮説が登録されていません";
+          completeSelect.appendChild(opt);
+          document.getElementById("completeWorkspace").style.display = "none";
+          return;
+        }
+
+        const ordered = list.slice().sort((a, b) => {
+          if (a.status === "実験中" && b.status !== "実験中") return -1;
+          if (a.status !== "実験中" && b.status === "実験中") return 1;
+          return 0;
+        });
+
+        ordered.forEach((h) => {
+          const opt = document.createElement("option");
+          opt.value = h.id;
+          opt.textContent = `[${h.status}] ${h.title}`;
+          completeSelect.appendChild(opt);
+        });
+
+        if (findHypothesisById(appState.selectedHypothesisId)) {
+          completeSelect.value = appState.selectedHypothesisId;
+        } else {
+          appState.selectedHypothesisId = ordered[0].id;
+          completeSelect.value = ordered[0].id;
+        }
+
+        renderCompleteWorkspace();
+      }
+
+      function getExtractedItems(hypo, field) {
+        if (!hypo || !Array.isArray(hypo.dailyLogs)) return [];
+        return hypo.dailyLogs
+          .filter((log) => String(log[field] || "").trim() !== "")
+          .map((log) => ({
+            logId: log.id,
+            recordedAt: log.recordedAt,
+            text: String(log[field]).trim()
+          }));
+      }
+
+      function renderCompleteWorkspace() {
+        const hypo = findHypothesisById(completeSelect.value);
+        const ws = document.getElementById("completeWorkspace");
+        if (!hypo) {
+          ws.style.display = "none";
+          return;
+        }
+        ws.style.display = "block";
+
+        document.getElementById("completeDateInput").value =
+          hypo.experiment.completedAt || getNowDateTimeLocal();
+        document.getElementById("completeStatusSelect").value =
+          hypo.status === "実験中" ? "実験済み" : hypo.status;
+
+        document.getElementById("finalOutcomeInput").value = hypo.conclusion.finalOutcome || "";
+        document.getElementById("finalSummaryInput").value = hypo.conclusion.summary || "";
+
+        const outcomes = getExtractedItems(hypo, "outcome");
+        const outcomeUl = document.getElementById("extractedOutcomeList");
+        if (outcomes.length === 0) {
+          outcomeUl.innerHTML = `<li class="extracted-item" style="color:var(--text-muted);">紐づく日々の結果に「成果」の記載はありません。</li>`;
+        } else {
+          outcomeUl.innerHTML = outcomes
+            .map(
+              (item) => `
+              <li class="extracted-item">
+                <div class="extracted-item-meta"><span>${escapeHtml(formatDisplayDateTime(item.recordedAt))}</span></div>
+                <div>${nl2brSafe(item.text)}</div>
+              </li>
+            `
+            )
+            .join("");
+        }
+
+        const issues = getExtractedItems(hypo, "issue");
+        const issueUl = document.getElementById("extractedIssueList");
+        if (issues.length === 0) {
+          issueUl.innerHTML = `<li class="extracted-item" style="color:var(--text-muted);">紐づく日々の結果に「課題」の記載はありません。</li>`;
+        } else {
+          issueUl.innerHTML = issues
+            .map(
+              (item, idx) => `
+              <li class="extracted-item">
+                <div class="extracted-item-meta">
+                  <span>${escapeHtml(formatDisplayDateTime(item.recordedAt))}</span>
+                  <span>編集可能</span>
+                </div>
+                <textarea class="issue-edit-textarea" data-issue-idx="${idx}" aria-label="抽出された課題の編集">${escapeHtml(item.text)}</textarea>
+                <div class="extracted-item-action">
+                  <button type="button" class="btn btn-secondary btn-sm btn-promote-issue" data-issue-idx="${idx}">
+                    ＋ この課題を新しい仮説として登録
+                  </button>
+                </div>
+              </li>
+            `
+            )
+            .join("");
+
+          issueUl.querySelectorAll(".btn-promote-issue").forEach((btn) => {
+            btn.addEventListener("click", () => {
+              const idx = Number(btn.dataset.issueIdx);
+              const textarea = issueUl.querySelector(`.issue-edit-textarea[data-issue-idx="${idx}"]`);
+              const editedText = textarea ? textarea.value.trim() : (issues[idx]?.text || "");
+              if (!editedText) {
+                showToast("仮説にする課題内容を入力してください");
+                if (textarea) textarea.focus();
+                return;
+              }
+              openPromoteIssueModal(hypo, editedText);
+            });
+          });
+        }
+      }
+
+      document.getElementById("btnAppendExtractedOutcomes").addEventListener("click", () => {
+        const hypo = findHypothesisById(completeSelect.value);
+        if (!hypo) return;
+        const outcomes = getExtractedItems(hypo, "outcome");
+        if (outcomes.length === 0) {
+          showToast("抽出できる成果がありません");
+          return;
+        }
+        const area = document.getElementById("finalOutcomeInput");
+        const joined = outcomes.map((o) => `・${o.text}`).join("\n");
+        area.value = area.value.trim() ? `${area.value.trim()}\n${joined}` : joined;
+        showToast("抽出した成果を反映しました");
+      });
+
+      document.getElementById("btnSaveCompletion").addEventListener("click", () => {
+        const hypo = findHypothesisById(completeSelect.value);
+        if (!hypo) return;
+
+        const completedAt = document.getElementById("completeDateInput").value || getNowDateTimeLocal();
+        const nextStatus = document.getElementById("completeStatusSelect").value;
+        const finalOutcome = document.getElementById("finalOutcomeInput").value;
+        const summary = document.getElementById("finalSummaryInput").value;
+
+        hypo.experiment.completedAt = completedAt;
+        hypo.status = nextStatus;
+        hypo.conclusion.finalOutcome = finalOutcome;
+        hypo.conclusion.summary = summary;
+        hypo.conclusion.updatedAt = getNowDateTimeLocal();
+
+        saveStore(store);
+        showToast("完了日と最終成果・考察を保存しました");
+      });
+
+      function openPromoteIssueModal(sourceHypo, issueText) {
+        const nowLocal = getNowDateTimeLocal();
+        const firstLine = issueText.split(/\r?\n/)[0].trim();
+        const shortTitle = firstLine.length > 36 ? `${firstLine.slice(0, 36)}…` : firstLine;
+
+        openModal("課題から新しい仮説を登録", `
+          <form id="promoteIssueForm">
+            <div class="form-hint" style="margin-bottom:10px;">
+              元仮説「${escapeHtml(sourceHypo.title)}」の課題から新規仮説を作成します（初期区分：未着手・黄色）。
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="promoOccuredAt">発生日（現在日時）</label>
+              <input type="datetime-local" id="promoOccuredAt" value="${escapeHtml(nowLocal)}" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="promoTitle">仮説タイトル</label>
+              <input type="text" id="promoTitle" value="${escapeHtml(shortTitle)}" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="promoContent">仮説内容</label>
+              <textarea id="promoContent">${escapeHtml(issueText)}</textarea>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">新しい仮説として登録する</button>
+          </form>
+        `);
+
+        document.getElementById("promoteIssueForm").addEventListener("submit", (e) => {
+          e.preventDefault();
+          const newHypo = normalizeHypothesis({
+            id: generateId("hyp"),
+            occurredAt: document.getElementById("promoOccuredAt").value || getNowDateTimeLocal(),
+            title: document.getElementById("promoTitle").value.trim(),
+            content: document.getElementById("promoContent").value.trim(),
+            status: "未着手",
+            experiment: { startDate: "", endDate: "", content: "", completedAt: "" },
+            dailyLogs: [],
+            conclusion: { finalOutcome: "", summary: "", updatedAt: "" }
+          });
+          store.hypotheses.unshift(newHypo);
+          saveStore(store);
+          closeModal();
+          showToast("新しい仮説（未着手）を登録しました");
+        });
+      }
+
+      // =========================================================================
+      // 7. ⑤ 仮説詳細ページ
+      // =========================================================================
+      function renderDetailView() {
+        const container = document.getElementById("detailContentContainer");
+        const idBadge = document.getElementById("detailHypoIdBadge");
+        const hypo = findHypothesisById(appState.selectedHypothesisId);
+
+        if (!hypo) {
+          idBadge.textContent = "";
+          container.innerHTML = `
+            <div class="empty-state">
+              表示する仮説が選択されていません。<br>
+              「仮説一覧」から仮説をタップして開いてください。
+            </div>
+          `;
+          return;
+        }
+
+        idBadge.textContent = `ID: ${hypo.id}`;
+        const exp = hypo.experiment || {};
+        const conc = hypo.conclusion || {};
+        const logs = Array.isArray(hypo.dailyLogs) ? hypo.dailyLogs : [];
+        const st = escapeHtml(hypo.status);
+
+        const logsHtml =
+          logs.length === 0
+            ? `<div class="form-hint">まだ日々の実験結果は登録されていません。</div>`
+            : logs
+                .map(
+                  (l) => `
+                  <div class="log-item">
+                    <div class="log-item-header">
+                      <span class="log-item-time">${escapeHtml(formatDisplayDateTime(l.recordedAt))}</span>
+                      <div style="display:flex; gap:6px;">
+                        <button type="button" class="btn btn-outline btn-sm btn-edit-log" data-log-id="${escapeHtml(l.id)}">編集</button>
+                        <button type="button" class="btn btn-danger btn-sm btn-del-log" data-log-id="${escapeHtml(l.id)}">削除</button>
+                      </div>
+                    </div>
+                    ${l.result ? `<div class="log-kv"><span class="log-kv-label">[結果]</span>${nl2brSafe(l.result)}</div>` : ""}
+                    ${l.outcome ? `<div class="log-kv"><span class="log-kv-label">[成果]</span>${nl2brSafe(l.outcome)}</div>` : ""}
+                    ${l.issue ? `<div class="log-kv"><span class="log-kv-label">[課題]</span>${nl2brSafe(l.issue)}</div>` : ""}
+                    ${l.other ? `<div class="log-kv"><span class="log-kv-label">[その他]</span>${nl2brSafe(l.other)}</div>` : ""}
+                  </div>
+                `
+                )
+                .join("");
+
+        container.innerHTML = `
+          <!-- 仮説基本情報（区分カラー反映） -->
+          <div class="card status-theme-${st}">
+            <div class="card-header">
+              <h2 class="card-title status-accent-${st}">💡 仮説情報</h2>
+              <span class="badge badge-${st}">${st}</span>
+            </div>
+            <div class="form-hint" style="margin-top:0; margin-bottom:6px;">発生日：${escapeHtml(formatDisplayDateTime(hypo.occurredAt))}</div>
+            <h3 style="margin:0 0 8px; font-size:18px;">${escapeHtml(hypo.title)}</h3>
+            <div style="font-size:14px; color:var(--text-sub);">${nl2brSafe(hypo.content || "（仮説内容の記載なし）")}</div>
+            <div class="action-row">
+              <button type="button" id="btnEditHypo" class="btn btn-secondary btn-sm">仮説を編集</button>
+              <button type="button" id="btnDeleteHypo" class="btn btn-danger btn-sm">仮説を削除</button>
+            </div>
+          </div>
+
+          <!-- 実験情報（区分カラー反映） -->
+          <div class="card status-theme-${st}">
+            <div class="card-header">
+              <h2 class="card-title status-accent-${st}">🔬 実験情報</h2>
+              <span class="badge badge-${st}">${st}</span>
+            </div>
+            <div class="log-kv"><span class="log-kv-label">実施期間：</span>${escapeHtml(formatPeriod(exp.startDate, exp.endDate))}</div>
+            <div class="log-kv"><span class="log-kv-label">完了日：</span>${escapeHtml(exp.completedAt ? formatDisplayDateTime(exp.completedAt) : "未完了")}</div>
+            <div class="log-kv"><span class="log-kv-label">実施内容：</span><br>${nl2brSafe(exp.content || "（実施内容の記載なし）")}</div>
+            <div class="action-row">
+              <button type="button" id="btnEditExp" class="btn btn-secondary btn-sm">実験情報を編集</button>
+              <button type="button" id="btnClearExp" class="btn btn-danger btn-sm">実験情報をクリア</button>
+            </div>
+          </div>
+
+          <!-- 日々の結果 -->
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">📊 日々の実験結果（${logs.length}件）</h2>
+              <button type="button" id="btnAddDetailLog" class="btn btn-primary btn-sm">＋ 結果を追加</button>
+            </div>
+            ${logsHtml}
+          </div>
+
+          <!-- 最終成果・まとめと考察 -->
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">🏁 最終成果・まとめと考察</h2>
+              <span class="card-code">CONCLUSION</span>
+            </div>
+            <div class="log-kv"><span class="log-kv-label">最終成果：</span><br>${nl2brSafe(conc.finalOutcome || "（未記載）")}</div>
+            <div class="log-kv" style="margin-top:8px;"><span class="log-kv-label">まとめと考察：</span><br>${nl2brSafe(conc.summary || "（未記載）")}</div>
+            <div class="action-row">
+              <button type="button" id="btnEditConc" class="btn btn-secondary btn-sm">最終成果・考察を編集</button>
+              <button type="button" id="btnClearConc" class="btn btn-danger btn-sm">最終成果・考察を削除</button>
+            </div>
+          </div>
+        `;
+
+        document.getElementById("btnEditHypo").addEventListener("click", () => {
+          openModal("仮説の編集", `
+            <form id="editHypoForm">
+              <div class="grid-2">
+                <div class="form-group">
+                  <label class="form-label" for="editHypoOcc">発生日</label>
+                  <input type="datetime-local" id="editHypoOcc" value="${escapeHtml(hypo.occurredAt)}" required />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="editHypoStatus">区分</label>
+                  <select id="editHypoStatus">
+                    <option value="未着手" ${hypo.status === "未着手" ? "selected" : ""}>未着手（黄色）</option>
+                    <option value="実験中" ${hypo.status === "実験中" ? "selected" : ""}>実験中（青）</option>
+                    <option value="実験済み" ${hypo.status === "実験済み" ? "selected" : ""}>実験済み（赤）</option>
+                    <option value="保留" ${hypo.status === "保留" ? "selected" : ""}>保留（緑）</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="editHypoTitle">仮説タイトル</label>
+                <input type="text" id="editHypoTitle" value="${escapeHtml(hypo.title)}" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="editHypoContent">仮説内容</label>
+                <textarea id="editHypoContent">${escapeHtml(hypo.content)}</textarea>
+              </div>
+              <button type="submit" class="btn btn-primary btn-block">変更を保存</button>
+            </form>
+          `);
+
+          document.getElementById("editHypoForm").addEventListener("submit", (e) => {
+            e.preventDefault();
+            hypo.occurredAt = document.getElementById("editHypoOcc").value;
+            hypo.status = document.getElementById("editHypoStatus").value;
+            hypo.title = document.getElementById("editHypoTitle").value.trim();
+            hypo.content = document.getElementById("editHypoContent").value.trim();
+            saveStore(store);
+            closeModal();
+            renderDetailView();
+            showToast("仮説を更新しました");
+          });
+        });
+
+        document.getElementById("btnDeleteHypo").addEventListener("click", () => {
+          if (!confirm(`仮説「${hypo.title}」と紐づく全データを削除しますか？この操作は取り消せません。`)) {
+            return;
+          }
+          store.hypotheses = store.hypotheses.filter((h) => h.id !== hypo.id);
+          appState.selectedHypothesisId = store.hypotheses[0] ? store.hypotheses[0].id : null;
+          saveStore(store);
+          showToast("仮説を削除しました");
+          switchView("view-list");
+        });
+
+        document.getElementById("btnEditExp").addEventListener("click", () => {
+          openModal("実験情報の編集", `
+            <form id="editExpForm">
+              <div class="grid-2">
+                <div class="form-group">
+                  <label class="form-label" for="editExpStart">実験開始日時</label>
+                  <input type="datetime-local" id="editExpStart" value="${escapeHtml(exp.startDate || "")}" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="editExpEnd">実験終了日時</label>
+                  <input type="datetime-local" id="editExpEnd" value="${escapeHtml(exp.endDate || "")}" />
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="editExpCompleted">完了日</label>
+                <input type="datetime-local" id="editExpCompleted" value="${escapeHtml(exp.completedAt || "")}" />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="editExpContent">実施内容</label>
+                <textarea id="editExpContent">${escapeHtml(exp.content || "")}</textarea>
+              </div>
+              <button type="submit" class="btn btn-primary btn-block">実験情報を保存</button>
+            </form>
+          `);
+
+          document.getElementById("editExpForm").addEventListener("submit", (e) => {
+            e.preventDefault();
+            hypo.experiment = {
+              startDate: document.getElementById("editExpStart").value,
+              endDate: document.getElementById("editExpEnd").value,
+              completedAt: document.getElementById("editExpCompleted").value,
+              content: document.getElementById("editExpContent").value.trim()
+            };
+            saveStore(store);
+            closeModal();
+            renderDetailView();
+            showToast("実験情報を保存しました");
+          });
+        });
+
+        document.getElementById("btnClearExp").addEventListener("click", () => {
+          if (!confirm("この仮説に紐づく実験情報をクリアしますか？")) return;
+          hypo.experiment = { startDate: "", endDate: "", content: "", completedAt: "" };
+          saveStore(store);
+          renderDetailView();
+          showToast("実験情報をクリアしました");
+        });
+
+        document.getElementById("btnAddDetailLog").addEventListener("click", () => {
+          openLogModal(hypo, null);
+        });
+
+        container.querySelectorAll(".btn-edit-log").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const target = hypo.dailyLogs.find((x) => x.id === btn.dataset.logId);
+            if (target) openLogModal(hypo, target);
+          });
+        });
+
+        container.querySelectorAll(".btn-del-log").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            if (!confirm("この実験結果ログを削除しますか？")) return;
+            hypo.dailyLogs = hypo.dailyLogs.filter((x) => x.id !== btn.dataset.logId);
+            saveStore(store);
+            renderDetailView();
+            showToast("実験結果ログを削除しました");
+          });
+        });
+
+        document.getElementById("btnEditConc").addEventListener("click", () => {
+          openModal("最終成果・まとめと考察の編集", `
+            <form id="editConcForm">
+              <div class="form-group">
+                <label class="form-label" for="editFinalOutcome">最終成果</label>
+                <textarea id="editFinalOutcome">${escapeHtml(conc.finalOutcome || "")}</textarea>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="editFinalSummary">まとめと考察</label>
+                <textarea id="editFinalSummary">${escapeHtml(conc.summary || "")}</textarea>
+              </div>
+              <button type="submit" class="btn btn-primary btn-block">保存する</button>
+            </form>
+          `);
+
+          document.getElementById("editConcForm").addEventListener("submit", (e) => {
+            e.preventDefault();
+            hypo.conclusion = {
+              finalOutcome: document.getElementById("editFinalOutcome").value,
+              summary: document.getElementById("editFinalSummary").value,
+              updatedAt: getNowDateTimeLocal()
+            };
+            saveStore(store);
+            closeModal();
+            renderDetailView();
+            showToast("最終成果・考察を保存しました");
+          });
+        });
+
+        document.getElementById("btnClearConc").addEventListener("click", () => {
+          if (!confirm("最終成果とまとめ・考察を削除しますか？")) return;
+          hypo.conclusion = { finalOutcome: "", summary: "", updatedAt: "" };
+          saveStore(store);
+          renderDetailView();
+          showToast("最終成果・考察を削除しました");
+        });
+      }
+
+      function openLogModal(hypo, existingLog) {
+        const isEdit = Boolean(existingLog);
+        const recVal = existingLog ? existingLog.recordedAt : getNowDateTimeLocal();
+
+        openModal(isEdit ? "実験結果ログの編集" : "実験結果ログの追加", `
+          <form id="detailLogModalForm">
+            <div class="form-group">
+              <label class="form-label" for="mLogDate">記録日時</label>
+              <input type="datetime-local" id="mLogDate" value="${escapeHtml(recVal)}" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="mLogResult">結果</label>
+              <textarea id="mLogResult">${escapeHtml(existingLog ? existingLog.result : "")}</textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="mLogOutcome">成果</label>
+              <textarea id="mLogOutcome">${escapeHtml(existingLog ? existingLog.outcome : "")}</textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="mLogIssue">課題</label>
+              <textarea id="mLogIssue">${escapeHtml(existingLog ? existingLog.issue : "")}</textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="mLogOther">その他</label>
+              <input type="text" id="mLogOther" value="${escapeHtml(existingLog ? existingLog.other : "")}" />
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">${isEdit ? "更新を保存" : "追加する"}</button>
+          </form>
+        `);
+
+        document.getElementById("detailLogModalForm").addEventListener("submit", (e) => {
+          e.preventDefault();
+          const payload = {
+            id: existingLog ? existingLog.id : generateId("log"),
+            recordedAt: document.getElementById("mLogDate").value || getNowDateTimeLocal(),
+            result: document.getElementById("mLogResult").value.trim(),
+            outcome: document.getElementById("mLogOutcome").value.trim(),
+            issue: document.getElementById("mLogIssue").value.trim(),
+            other: document.getElementById("mLogOther").value.trim()
+          };
+
+          if (isEdit) {
+            const idx = hypo.dailyLogs.findIndex((x) => x.id === existingLog.id);
+            if (idx !== -1) hypo.dailyLogs[idx] = payload;
+          } else {
+            hypo.dailyLogs.unshift(payload);
+          }
+
+          saveStore(store);
+          closeModal();
+          renderDetailView();
+          showToast(isEdit ? "実験結果ログを更新しました" : "実験結果ログを追加しました");
+        });
+      }
+
+      // =========================================================================
+      // 8. モーダル制御・JSONバックアップ／インポート
+      // =========================================================================
+      const modalBackdrop = document.getElementById("modalBackdrop");
+      const modalBody = document.getElementById("modalBody");
+      const modalTitle = document.getElementById("modalTitle");
+
+      function openModal(title, htmlContent) {
+        modalTitle.textContent = title;
+        modalBody.innerHTML = htmlContent;
+        modalBackdrop.classList.add("open");
+      }
+
+      function closeModal() {
+        modalBackdrop.classList.remove("open");
+        modalBody.innerHTML = "";
+      }
+
+      document.getElementById("btnCloseModal").addEventListener("click", closeModal);
+      modalBackdrop.addEventListener("click", (e) => {
+        if (e.target === modalBackdrop) closeModal();
+      });
+
+      document.getElementById("btnOpenBackup").addEventListener("click", () => {
+        openModal("データ管理（JSONバックアップ・復元）", `
+          <p style="font-size:13px; color:var(--text-sub); margin-top:0;">
+            データはブラウザの <code>localStorage</code>（キー: <code>${STORAGE_KEY}</code>）に自動保存されます。機種変更や万が一に備えてJSONファイルで書き出し・復元できます。
+          </p>
+          <div class="form-group">
+            <button type="button" id="btnExportJson" class="btn btn-primary btn-block">JSONファイルをダウンロード</button>
+          </div>
+          <div class="divider"></div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label" for="importJsonFile">JSONファイルから復元（現在のデータは上書きされます）</label>
+            <input type="file" id="importJsonFile" accept="application/json,.json" style="padding:10px;" />
+          </div>
+        `);
+
+        document.getElementById("btnExportJson").addEventListener("click", () => {
+          const blob = new Blob([JSON.stringify(store, null, 2)], { type: "application/json" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          const stamp = getNowDateTimeLocal().replace(/[:T]/g, "-");
+          a.href = url;
+          a.download = `sa_note_backup_${stamp}.json`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+          showToast("バックアップJSONをダウンロードしました");
+        });
+
+        document.getElementById("importJsonFile").addEventListener("change", (e) => {
+          const file = e.target.files && e.target.files[0];
+          if (!file) return;
+          if (!confirm("JSONファイルの内容で現在のデータを上書き復元しますか？")) {
+            e.target.value = "";
+            return;
+          }
+          const reader = new FileReader();
+          reader.onload = () => {
+            try {
+              const parsed = JSON.parse(String(reader.result || "{}"));
+              const list = Array.isArray(parsed)
+                ? parsed
+                : Array.isArray(parsed.hypotheses)
+                  ? parsed.hypotheses
+                  : [];
+              store = {
+                version: SCHEMA_VERSION,
+                hypotheses: list.map(normalizeHypothesis).filter(Boolean)
+              };
+              appState.selectedHypothesisId = store.hypotheses[0] ? store.hypotheses[0].id : null;
+              saveStore(store);
+              closeModal();
+              switchView(appState.currentView);
+              showToast("データを復元しました");
+            } catch (err) {
+              showToast("JSONファイルの読み込みに失敗しました");
+            }
+          };
+          reader.readAsText(file);
+        });
+      });
+
+      // =========================================================================
+      // 9. 初期化起動
+      // =========================================================================
+      updateHeroClock();
+      setInterval(updateHeroClock, 1000);
+      refreshDailyForm();
+      refreshRegisterForm();
+    })();
+  </script>
+</body>
+</html>
