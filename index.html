@@ -192,6 +192,68 @@
       line-height: 1.3;
     }
 
+    /* 日次上部：対象日の実施予定一覧 */
+    .scheduled-plan-card {
+      background: #FFFFFF;
+      border: 1.5px solid #7DD3FC;
+      border-radius: var(--radius-md);
+      padding: 14px 15px;
+      margin-bottom: 14px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .plan-list {
+      list-style: none;
+      margin: 8px 0 0;
+      padding: 0;
+    }
+
+    .plan-item {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 9px 11px;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-sm);
+      background: #F8FAFC;
+      margin-bottom: 8px;
+      font-size: 13px;
+    }
+
+    .plan-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .plan-item-main {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      flex: 1;
+    }
+
+    .plan-check {
+      width: 20px;
+      height: 20px;
+      margin-top: 2px;
+      accent-color: var(--primary);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .plan-text.is-done {
+      text-decoration: line-through;
+      color: var(--text-muted);
+    }
+
+    .plan-meta {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--primary-hover);
+      margin-bottom: 2px;
+      font-weight: 700;
+    }
+
     /* カード */
     .card {
       background: var(--bg-surface);
@@ -245,6 +307,12 @@
       margin-bottom: 5px;
     }
 
+    .red-note {
+      color: #DC2626;
+      font-weight: 700;
+      margin-left: 4px;
+    }
+
     .form-hint {
       font-size: 11px;
       color: var(--text-muted);
@@ -277,7 +345,7 @@
     }
 
     textarea {
-      min-height: 88px;
+      min-height: 82px;
       resize: vertical;
     }
 
@@ -364,8 +432,8 @@
     }
 
     .btn-sm {
-      min-height: 38px;
-      padding: 0 11px;
+      min-height: 36px;
+      padding: 0 10px;
       font-size: 12px;
     }
 
@@ -887,6 +955,15 @@
         <div id="heroNowDisplay" class="datetime-hero-main">----/--/-- --:--:--</div>
       </div>
 
+      <!-- 日次上部：記録日時の日付を対象とした実施予定一覧 -->
+      <div class="scheduled-plan-card" aria-live="polite">
+        <div class="card-header" style="margin-bottom:6px; padding-bottom:6px;">
+          <h2 class="card-title" id="targetDatePlansTitle">📌 実施予定</h2>
+          <span id="targetDatePlansBadge" class="card-code">0件</span>
+        </div>
+        <div id="targetDatePlansContainer"></div>
+      </div>
+
       <!-- 実施中の実験結果の登録 -->
       <div class="card">
         <div class="card-header">
@@ -903,8 +980,13 @@
           </div>
 
           <div class="form-group">
-            <label class="form-label" for="dailyLogDate">記録日時</label>
+            <label class="form-label" for="dailyLogDate">記録日時（日次の日付）</label>
             <input type="datetime-local" id="dailyLogDate" required />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="dailyTodayActionInput">本日の実施</label>
+            <textarea id="dailyTodayActionInput" placeholder="例：〇〇の条件設定を行い、3回テストを実施した"></textarea>
           </div>
 
           <div class="form-group">
@@ -913,13 +995,24 @@
           </div>
 
           <div class="form-group">
-            <label class="form-label" for="dailyOutcomeInput">成果（うまくいったこと・前進）</label>
+            <label class="form-label" for="dailyOutcomeInput">成果<span class="red-note">＊２０秒の重み付け実施</span></label>
             <textarea id="dailyOutcomeInput" placeholder="例：手順Aを導入したことで再現性が安定した"></textarea>
           </div>
 
           <div class="form-group">
             <label class="form-label" for="dailyIssueInput">課題（ボトルネック・次の検証テーマ）</label>
             <textarea id="dailyIssueInput" placeholder="例：高負荷時に処理時間が延びる要因を特定する必要がある"></textarea>
+          </div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label class="form-label" for="dailyTomorrowPlanInput">明日の実施予定</label>
+              <input type="text" id="dailyTomorrowPlanInput" placeholder="例：別条件での比較実験を行う" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="dailyTomorrowDateInput">実施日（自動：明日）</label>
+              <input type="date" id="dailyTomorrowDateInput" />
+            </div>
           </div>
 
           <div class="form-group">
@@ -1005,7 +1098,7 @@
         <div class="form-group">
           <label class="form-label" for="listSearchInput">キーワード横断検索・抽出</label>
           <div style="display:flex; gap:6px;">
-            <input type="text" id="listSearchInput" placeholder="キーワードで仮説＆日次ログ（結果/成果/課題）を抽出" />
+            <input type="text" id="listSearchInput" placeholder="キーワードで仮説＆日次ログ（実施/結果/成果/課題/予定）を抽出" />
             <button type="button" id="btnClearSearch" class="btn btn-outline btn-sm" title="検索クリア">クリア</button>
           </div>
           <div id="frequentKeywordsArea" class="keyword-chip-row"></div>
@@ -1025,10 +1118,12 @@
           <div class="form-group" style="margin-bottom:0;">
             <label class="form-label" for="listExtractFieldFilter">ログ抽出対象</label>
             <select id="listExtractFieldFilter">
-              <option value="ALL">全項目（結果/成果/課題/その他/総括）</option>
+              <option value="ALL">全項目（実施/結果/成果/課題/予定/総括）</option>
               <option value="outcome">成果のみ</option>
               <option value="issue">課題のみ</option>
               <option value="result">結果のみ</option>
+              <option value="todayAction">本日の実施のみ</option>
+              <option value="tomorrowPlan">明日の実施予定のみ</option>
               <option value="conclusion">最終成果・考察のみ</option>
             </select>
           </div>
@@ -1179,7 +1274,8 @@
       function createInitialStore() {
         return {
           version: SCHEMA_VERSION,
-          hypotheses: []
+          hypotheses: [],
+          scheduledPlans: [] // { id, targetDate (YYYY-MM-DD), planText, hypoId, hypoTitle, done, createdAt }
         };
       }
 
@@ -1204,9 +1300,12 @@
           dailyLogs: logsRaw.map((l) => ({
             id: String(l.id || generateId("log")),
             recordedAt: String(l.recordedAt || getNowDateTimeLocal()),
+            todayAction: String(l.todayAction || ""),
             result: String(l.result || ""),
             outcome: String(l.outcome || ""),
             issue: String(l.issue || ""),
+            tomorrowPlan: String(l.tomorrowPlan || ""),
+            tomorrowDate: String(l.tomorrowDate || ""),
             other: String(l.other || "")
           })),
           conclusion: {
@@ -1214,6 +1313,19 @@
             summary: String(concRaw.summary || ""),
             updatedAt: String(concRaw.updatedAt || "")
           }
+        };
+      }
+
+      function normalizeScheduledPlan(raw) {
+        if (!raw || typeof raw !== "object") return null;
+        return {
+          id: String(raw.id || generateId("plan")),
+          targetDate: String(raw.targetDate || ""),
+          planText: String(raw.planText || ""),
+          hypoId: String(raw.hypoId || ""),
+          hypoTitle: String(raw.hypoTitle || ""),
+          done: Boolean(raw.done),
+          createdAt: String(raw.createdAt || getNowDateTimeLocal())
         };
       }
 
@@ -1240,9 +1352,11 @@
             : Array.isArray(parsed.hypotheses)
               ? parsed.hypotheses
               : [];
+          const plansList = Array.isArray(parsed.scheduledPlans) ? parsed.scheduledPlans : [];
           const normalized = {
             version: SCHEMA_VERSION,
-            hypotheses: list.map(normalizeHypothesis).filter(Boolean)
+            hypotheses: list.map(normalizeHypothesis).filter(Boolean),
+            scheduledPlans: plansList.map(normalizeScheduledPlan).filter(Boolean)
           };
           localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
           return normalized;
@@ -1255,7 +1369,8 @@
       function saveStore(data) {
         const payload = {
           version: SCHEMA_VERSION,
-          hypotheses: Array.isArray(data.hypotheses) ? data.hypotheses : []
+          hypotheses: Array.isArray(data.hypotheses) ? data.hypotheses : [],
+          scheduledPlans: Array.isArray(data.scheduledPlans) ? data.scheduledPlans : []
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
       }
@@ -1279,6 +1394,32 @@
         const now = new Date();
         const pad = (n) => String(n).padStart(2, "0");
         return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+      }
+
+      function formatDateInputFromDate(d) {
+        const pad = (n) => String(n).padStart(2, "0");
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+      }
+
+      // 基準となる日時文字列（datetime-local）の翌日（YYYY-MM-DD）を返す
+      function getNextDayDateStr(dtLocalStr) {
+        const base = dtLocalStr ? new Date(dtLocalStr) : new Date();
+        if (Number.isNaN(base.getTime())) {
+          const tomorrow = new Date();
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          return formatDateInputFromDate(tomorrow);
+        }
+        const next = new Date(base.getFullYear(), base.getMonth(), base.getDate() + 1);
+        return formatDateInputFromDate(next);
+      }
+
+      // 日次入力欄の「記録日時」から日次の日付（YYYY-MM-DD）を取得
+      function getDailyTargetDateStr() {
+        const dtVal = document.getElementById("dailyLogDate")?.value || "";
+        if (dtVal && dtVal.length >= 10) {
+          return dtVal.slice(0, 10);
+        }
+        return formatDateInputFromDate(new Date());
       }
 
       function formatHeroNow() {
@@ -1398,16 +1539,82 @@
       });
 
       // =========================================================================
-      // 4. ① 日次ページ & ② 仮説登録ページ
+      // 4. ① 日次ページ（実施予定一覧・本日の実施・成果重み付け・明日の予定）& ② 仮説登録
       // =========================================================================
       function updateHeroClock() {
         const el = document.getElementById("heroNowDisplay");
         if (el) el.textContent = formatHeroNow();
       }
 
+      function renderTargetDatePlans() {
+        const targetDateStr = getDailyTargetDateStr();
+        const titleEl = document.getElementById("targetDatePlansTitle");
+        const badgeEl = document.getElementById("targetDatePlansBadge");
+        const containerEl = document.getElementById("targetDatePlansContainer");
+
+        if (titleEl) {
+          titleEl.textContent = `📌 実施予定（対象日：${targetDateStr}）`;
+        }
+
+        const matched = (store.scheduledPlans || []).filter((p) => p.targetDate === targetDateStr);
+        if (badgeEl) {
+          badgeEl.textContent = `${matched.length}件`;
+        }
+
+        if (matched.length === 0) {
+          containerEl.innerHTML = `<div class="form-hint" style="margin-top:0;">この日を実施日として登録された予定はありません。</div>`;
+          return;
+        }
+
+        containerEl.innerHTML = `
+          <ul class="plan-list">
+            ${matched
+              .map(
+                (p) => `
+              <li class="plan-item" data-plan-id="${escapeHtml(p.id)}">
+                <div class="plan-item-main">
+                  <input type="checkbox" class="plan-check" ${p.done ? "checked" : ""} aria-label="予定の完了切替" />
+                  <div>
+                    ${p.hypoTitle ? `<div class="plan-meta">${escapeHtml(p.hypoTitle)}</div>` : ""}
+                    <div class="plan-text ${p.done ? "is-done" : ""}">${escapeHtml(p.planText)}</div>
+                  </div>
+                </div>
+                <button type="button" class="btn btn-danger btn-sm btn-del-plan">削除</button>
+              </li>
+            `
+              )
+              .join("")}
+          </ul>
+        `;
+
+        containerEl.querySelectorAll(".plan-item").forEach((li) => {
+          const planId = li.dataset.planId;
+          const checkbox = li.querySelector(".plan-check");
+          const delBtn = li.querySelector(".btn-del-plan");
+
+          checkbox.addEventListener("change", () => {
+            const target = store.scheduledPlans.find((item) => item.id === planId);
+            if (target) {
+              target.done = checkbox.checked;
+              saveStore(store);
+              renderTargetDatePlans();
+            }
+          });
+
+          delBtn.addEventListener("click", () => {
+            store.scheduledPlans = store.scheduledPlans.filter((item) => item.id !== planId);
+            saveStore(store);
+            renderTargetDatePlans();
+            showToast("予定を削除しました");
+          });
+        });
+      }
+
       function refreshDailyForm() {
         const nowLocal = getNowDateTimeLocal();
-        document.getElementById("dailyLogDate").value = nowLocal;
+        const logDateInput = document.getElementById("dailyLogDate");
+        logDateInput.value = nowLocal;
+        document.getElementById("dailyTomorrowDateInput").value = getNextDayDateStr(nowLocal);
 
         const select = document.getElementById("dailyHypoSelect");
         const notice = document.getElementById("noActiveHypoNotice");
@@ -1429,7 +1636,17 @@
             select.appendChild(opt);
           });
         }
+
+        renderTargetDatePlans();
       }
+
+      document.getElementById("dailyLogDate").addEventListener("change", (e) => {
+        const val = e.target.value;
+        if (val) {
+          document.getElementById("dailyTomorrowDateInput").value = getNextDayDateStr(val);
+        }
+        renderTargetDatePlans();
+      });
 
       function refreshRegisterForm() {
         const nowLocal = getNowDateTimeLocal();
@@ -1452,32 +1669,59 @@
         if (!hypo) return;
 
         const recordedAt = document.getElementById("dailyLogDate").value || getNowDateTimeLocal();
+        const todayAction = document.getElementById("dailyTodayActionInput").value.trim();
         const result = document.getElementById("dailyResultInput").value.trim();
         const outcome = document.getElementById("dailyOutcomeInput").value.trim();
         const issue = document.getElementById("dailyIssueInput").value.trim();
+        const tomorrowPlan = document.getElementById("dailyTomorrowPlanInput").value.trim();
+        const tomorrowDate =
+          document.getElementById("dailyTomorrowDateInput").value || getNextDayDateStr(recordedAt);
         const other = document.getElementById("dailyOtherInput").value.trim();
 
-        if (!result && !outcome && !issue && !other) {
-          showToast("結果・成果・課題・その他のいずれかを入力してください");
+        if (!todayAction && !result && !outcome && !issue && !tomorrowPlan && !other) {
+          showToast("いずれかの項目を入力してください");
           return;
         }
 
         hypo.dailyLogs.unshift({
           id: generateId("log"),
           recordedAt,
+          todayAction,
           result,
           outcome,
           issue,
+          tomorrowPlan,
+          tomorrowDate,
           other
         });
 
+        // 明日の実施予定が入力されていれば、指定された実施日の予定リストへ登録
+        if (tomorrowPlan) {
+          store.scheduledPlans.unshift({
+            id: generateId("plan"),
+            targetDate: tomorrowDate,
+            planText: tomorrowPlan,
+            hypoId: hypo.id,
+            hypoTitle: hypo.title,
+            done: false,
+            createdAt: getNowDateTimeLocal()
+          });
+        }
+
         saveStore(store);
+        document.getElementById("dailyTodayActionInput").value = "";
         document.getElementById("dailyResultInput").value = "";
         document.getElementById("dailyOutcomeInput").value = "";
         document.getElementById("dailyIssueInput").value = "";
+        document.getElementById("dailyTomorrowPlanInput").value = "";
         document.getElementById("dailyOtherInput").value = "";
-        document.getElementById("dailyLogDate").value = getNowDateTimeLocal();
-        showToast("実験結果を保存しました");
+
+        const nextNow = getNowDateTimeLocal();
+        document.getElementById("dailyLogDate").value = nextNow;
+        document.getElementById("dailyTomorrowDateInput").value = getNextDayDateStr(nextNow);
+
+        renderTargetDatePlans();
+        showToast(tomorrowPlan ? `実験結果と予定（${tomorrowDate}）を保存しました` : "実験結果を保存しました");
       });
 
       document.getElementById("quickHypoForm").addEventListener("submit", (e) => {
@@ -1525,7 +1769,7 @@
       });
 
       // =========================================================================
-      // 5. ③ 仮説一覧・横断抽出ページ（キーワード横断抽出＆頻出ワードチップ）
+      // 5. ③ 仮説一覧・横断抽出ページ
       // =========================================================================
       function updateActivePeriodButtonUI() {
         const btn = document.getElementById("btnActivePeriodFilter");
@@ -1539,12 +1783,11 @@
         }
       }
 
-      // 頻出キーワード自動抽出（2文字以上のカタカナ・漢字・英数字語句を集計）
       function extractTopKeywords(hypotheses, limit = 8) {
         const stopWords = new Set([
           "こと", "もの", "ため", "よう", "ところ", "場合", "結果", "成果", "課題", "その他",
           "仮説", "実験", "確認", "実施", "検証", "対応", "必要", "可能", "状況", "状態",
-          "内容", "日時", "期間", "完了", "発生", "考察", "まとめ"
+          "内容", "日時", "期間", "完了", "発生", "考察", "まとめ", "本日", "明日", "予定"
         ]);
         const counts = new Map();
 
@@ -1557,7 +1800,7 @@
             h.conclusion?.summary || ""
           ];
           (h.dailyLogs || []).forEach((l) => {
-            texts.push(l.result, l.outcome, l.issue, l.other);
+            texts.push(l.todayAction, l.result, l.outcome, l.issue, l.tomorrowPlan, l.other);
           });
 
           texts.join(" ").split(/[\s、。・,，.．!！?？「」『』（）()【】\[\]：:;/／\n\r]+/).forEach((tok) => {
@@ -1603,27 +1846,27 @@
         });
       }
 
-      // 横断ログ箇所抽出（該当するログや総括の抜粋をリスト化）
       function collectMatchedExcerpts(hypotheses, query, fieldFilter) {
         if (!query && fieldFilter === "ALL") return [];
         const qLower = query.toLowerCase();
         const excerpts = [];
 
         const fieldLabels = {
+          todayAction: "本日の実施",
           result: "結果",
           outcome: "成果",
           issue: "課題",
+          tomorrowPlan: "明日の実施予定",
           other: "その他",
           finalOutcome: "最終成果",
           summary: "まとめ・考察"
         };
 
         hypotheses.forEach((h) => {
-          // 日次ログから抽出
           (h.dailyLogs || []).forEach((log) => {
             const targetKeys =
               fieldFilter === "ALL"
-                ? ["result", "outcome", "issue", "other"]
+                ? ["todayAction", "result", "outcome", "issue", "tomorrowPlan", "other"]
                 : fieldFilter === "conclusion"
                   ? []
                   : [fieldFilter];
@@ -1632,19 +1875,19 @@
               const val = String(log[k] || "").trim();
               if (!val) return;
               if (!qLower || val.toLowerCase().includes(qLower)) {
+                const extraDate = k === "tomorrowPlan" && log.tomorrowDate ? ` / 実施日:${log.tomorrowDate}` : "";
                 excerpts.push({
                   hypoId: h.id,
                   hypoTitle: h.title,
                   status: h.status,
                   fieldLabel: fieldLabels[k] || k,
-                  timeLabel: formatDisplayDateTime(log.recordedAt),
+                  timeLabel: `${formatDisplayDateTime(log.recordedAt)}${extraDate}`,
                   text: val
                 });
               }
             });
           });
 
-          // 最終成果・考察から抽出
           if (fieldFilter === "ALL" || fieldFilter === "conclusion") {
             ["finalOutcome", "summary"].forEach((ck) => {
               const val = String(h.conclusion?.[ck] || "").trim();
@@ -1711,7 +1954,7 @@
           list = list.filter((h) => {
             const inHypo = `${h.title} ${h.content} ${h.experiment?.content || ""}`.toLowerCase().includes(qLower);
             const inLogs = (h.dailyLogs || []).some((l) =>
-              `${l.result} ${l.outcome} ${l.issue} ${l.other}`.toLowerCase().includes(qLower)
+              `${l.todayAction} ${l.result} ${l.outcome} ${l.issue} ${l.tomorrowPlan} ${l.other}`.toLowerCase().includes(qLower)
             );
             const inConc = `${h.conclusion?.finalOutcome || ""} ${h.conclusion?.summary || ""}`
               .toLowerCase()
@@ -1720,7 +1963,6 @@
           });
         }
 
-        // 横断抽出されたログ箇所の表示
         const excerpts = collectMatchedExcerpts(list, query, fieldFilter);
         if (query || fieldFilter !== "ALL") {
           if (excerpts.length === 0) {
@@ -2064,9 +2306,11 @@
                         <button type="button" class="btn btn-danger btn-sm btn-del-log" data-log-id="${escapeHtml(l.id)}">削除</button>
                       </div>
                     </div>
+                    ${l.todayAction ? `<div class="log-kv"><span class="log-kv-label">[本日の実施]</span>${nl2brSafe(l.todayAction)}</div>` : ""}
                     ${l.result ? `<div class="log-kv"><span class="log-kv-label">[結果]</span>${nl2brSafe(l.result)}</div>` : ""}
                     ${l.outcome ? `<div class="log-kv"><span class="log-kv-label">[成果]</span>${nl2brSafe(l.outcome)}</div>` : ""}
                     ${l.issue ? `<div class="log-kv"><span class="log-kv-label">[課題]</span>${nl2brSafe(l.issue)}</div>` : ""}
+                    ${l.tomorrowPlan ? `<div class="log-kv"><span class="log-kv-label">[明日の実施予定${l.tomorrowDate ? `・${escapeHtml(l.tomorrowDate)}` : ""}]</span>${nl2brSafe(l.tomorrowPlan)}</div>` : ""}
                     ${l.other ? `<div class="log-kv"><span class="log-kv-label">[その他]</span>${nl2brSafe(l.other)}</div>` : ""}
                   </div>
                 `
@@ -2292,6 +2536,9 @@
       function openLogModal(hypo, existingLog) {
         const isEdit = Boolean(existingLog);
         const recVal = existingLog ? existingLog.recordedAt : getNowDateTimeLocal();
+        const tmrDateVal = existingLog && existingLog.tomorrowDate
+          ? existingLog.tomorrowDate
+          : getNextDayDateStr(recVal);
 
         openModal(isEdit ? "実験結果ログの編集" : "実験結果ログの追加", `
           <form id="detailLogModalForm">
@@ -2300,16 +2547,30 @@
               <input type="datetime-local" id="mLogDate" value="${escapeHtml(recVal)}" required />
             </div>
             <div class="form-group">
+              <label class="form-label" for="mLogTodayAction">本日の実施</label>
+              <textarea id="mLogTodayAction">${escapeHtml(existingLog ? existingLog.todayAction : "")}</textarea>
+            </div>
+            <div class="form-group">
               <label class="form-label" for="mLogResult">結果</label>
               <textarea id="mLogResult">${escapeHtml(existingLog ? existingLog.result : "")}</textarea>
             </div>
             <div class="form-group">
-              <label class="form-label" for="mLogOutcome">成果</label>
+              <label class="form-label" for="mLogOutcome">成果<span class="red-note">＊２０秒の重み付け実施</span></label>
               <textarea id="mLogOutcome">${escapeHtml(existingLog ? existingLog.outcome : "")}</textarea>
             </div>
             <div class="form-group">
               <label class="form-label" for="mLogIssue">課題</label>
               <textarea id="mLogIssue">${escapeHtml(existingLog ? existingLog.issue : "")}</textarea>
+            </div>
+            <div class="grid-2">
+              <div class="form-group">
+                <label class="form-label" for="mLogTomorrowPlan">明日の実施予定</label>
+                <input type="text" id="mLogTomorrowPlan" value="${escapeHtml(existingLog ? existingLog.tomorrowPlan : "")}" />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="mLogTomorrowDate">実施日</label>
+                <input type="date" id="mLogTomorrowDate" value="${escapeHtml(tmrDateVal)}" />
+              </div>
             </div>
             <div class="form-group">
               <label class="form-label" for="mLogOther">その他</label>
@@ -2324,9 +2585,12 @@
           const payload = {
             id: existingLog ? existingLog.id : generateId("log"),
             recordedAt: document.getElementById("mLogDate").value || getNowDateTimeLocal(),
+            todayAction: document.getElementById("mLogTodayAction").value.trim(),
             result: document.getElementById("mLogResult").value.trim(),
             outcome: document.getElementById("mLogOutcome").value.trim(),
             issue: document.getElementById("mLogIssue").value.trim(),
+            tomorrowPlan: document.getElementById("mLogTomorrowPlan").value.trim(),
+            tomorrowDate: document.getElementById("mLogTomorrowDate").value || "",
             other: document.getElementById("mLogOther").value.trim()
           };
 
@@ -2337,9 +2601,22 @@
             hypo.dailyLogs.unshift(payload);
           }
 
+          if (payload.tomorrowPlan && payload.tomorrowDate) {
+            store.scheduledPlans.unshift({
+              id: generateId("plan"),
+              targetDate: payload.tomorrowDate,
+              planText: payload.tomorrowPlan,
+              hypoId: hypo.id,
+              hypoTitle: hypo.title,
+              done: false,
+              createdAt: getNowDateTimeLocal()
+            });
+          }
+
           saveStore(store);
           closeModal();
           renderDetailView();
+          if (appState.currentView === "view-daily") renderTargetDatePlans();
           showToast(isEdit ? "実験結果ログを更新しました" : "実験結果ログを追加しました");
         });
       }
@@ -2412,9 +2689,11 @@
                 : Array.isArray(parsed.hypotheses)
                   ? parsed.hypotheses
                   : [];
+              const plansList = Array.isArray(parsed.scheduledPlans) ? parsed.scheduledPlans : [];
               store = {
                 version: SCHEMA_VERSION,
-                hypotheses: list.map(normalizeHypothesis).filter(Boolean)
+                hypotheses: list.map(normalizeHypothesis).filter(Boolean),
+                scheduledPlans: plansList.map(normalizeScheduledPlan).filter(Boolean)
               };
               appState.selectedHypothesisId = store.hypotheses[0] ? store.hypotheses[0].id : null;
               saveStore(store);
