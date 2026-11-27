@@ -22,30 +22,73 @@
       --border: #BAE6FD;
       --border-light: #E2E8F0;
 
-      /* 区分別テーマカラー（実験中=青 / 未着手=黄 / 実験済み=赤 / 保留=緑） */
+      /* 区分別バッジカラー（実験中=青 / 未着手=黄 / 実験済み=赤 / 保留=緑） */
       --st-active-color: #0369A1;
-      --st-active-accent: #0284C7;
-      --st-active-bg: #F0F9FF;
       --st-active-badge-bg: #E0F2FE;
       --st-active-border: #7DD3FC;
 
       --st-pending-color: #A16207;
-      --st-pending-accent: #EAB308;
-      --st-pending-bg: #FEFCE8;
       --st-pending-badge-bg: #FEF9C3;
       --st-pending-border: #FDE047;
 
       --st-done-color: #B91C1C;
-      --st-done-accent: #EF4444;
-      --st-done-bg: #FEF2F2;
       --st-done-badge-bg: #FEE2E2;
       --st-done-border: #FCA5A5;
 
       --st-hold-color: #15803D;
-      --st-hold-accent: #22C55E;
-      --st-hold-bg: #F0FDF4;
       --st-hold-badge-bg: #DCFCE7;
       --st-hold-border: #86EFAC;
+
+      /* 仮説カラープリセット（10種類・任意選択・派生継承用） */
+      --hc-sky-color: #0369A1;
+      --hc-sky-accent: #0284C7;
+      --hc-sky-bg: #F0F9FF;
+      --hc-sky-border: #7DD3FC;
+
+      --hc-orange-color: #C2410C;
+      --hc-orange-accent: #F97316;
+      --hc-orange-bg: #FFF7ED;
+      --hc-orange-border: #FDBA74;
+
+      --hc-emerald-color: #047857;
+      --hc-emerald-accent: #10B981;
+      --hc-emerald-bg: #ECFDF5;
+      --hc-emerald-border: #6EE7B7;
+
+      --hc-violet-color: #6D28D9;
+      --hc-violet-accent: #8B5CF6;
+      --hc-violet-bg: #F5F3FF;
+      --hc-violet-border: #C4B5FD;
+
+      --hc-rose-color: #BE123C;
+      --hc-rose-accent: #F43F5E;
+      --hc-rose-bg: #FFF1F2;
+      --hc-rose-border: #FDA4AF;
+
+      --hc-indigo-color: #3730A3;
+      --hc-indigo-accent: #6366F1;
+      --hc-indigo-bg: #EEF2FF;
+      --hc-indigo-border: #A5B4FC;
+
+      --hc-teal-color: #0F766E;
+      --hc-teal-accent: #14B8A6;
+      --hc-teal-bg: #F0FDFA;
+      --hc-teal-border: #5EEAD4;
+
+      --hc-amber-color: #B45309;
+      --hc-amber-accent: #F59E0B;
+      --hc-amber-bg: #FFFBEB;
+      --hc-amber-border: #FCD34D;
+
+      --hc-cyan-color: #0E7490;
+      --hc-cyan-accent: #06B6D4;
+      --hc-cyan-bg: #ECFEFF;
+      --hc-cyan-border: #67E8F9;
+
+      --hc-magenta-color: #A21CAF;
+      --hc-magenta-accent: #D946EF;
+      --hc-magenta-bg: #FDF4FF;
+      --hc-magenta-border: #F0ABFC;
 
       --danger: #DC2626;
       --danger-soft: #FEF2F2;
@@ -160,6 +203,60 @@
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(4px); }
       to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* 日次ページ上部：今月のテーマバナー */
+    .monthly-theme-banner {
+      background: #FFFFFF;
+      border: 1.5px solid #38BDF8;
+      border-left: 5px solid var(--primary);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      margin-bottom: 12px;
+      box-shadow: var(--shadow-sm);
+      cursor: pointer;
+      transition: background-color 0.15s;
+    }
+
+    .monthly-theme-banner:hover {
+      background: #F8FAFC;
+    }
+
+    .monthly-theme-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .monthly-theme-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--primary-hover);
+      letter-spacing: 0.04em;
+    }
+
+    .monthly-theme-edit-hint {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--primary);
+      background: var(--bg-subtle);
+      padding: 2px 8px;
+      border-radius: 999px;
+    }
+
+    .monthly-theme-text {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-main);
+      word-break: break-word;
+    }
+
+    .monthly-theme-text.is-empty {
+      color: var(--text-muted);
+      font-weight: 500;
+      font-size: 13px;
     }
 
     /* 日次ページ専用：現在日時バナー */
@@ -441,7 +538,7 @@
     .badge {
       display: inline-flex;
       align-items: center;
-      padding: 3px 10px;
+      padding: 4px 10px;
       border-radius: 999px;
       font-size: 12px;
       font-weight: 700;
@@ -472,35 +569,99 @@
       border: 1px solid var(--st-hold-border);
     }
 
-    /* 区分ごとのカード・実験エリア色分け */
-    .status-theme-未着手 {
-      background-color: var(--st-pending-bg) !important;
-      border-color: var(--st-pending-border) !important;
-      border-left: 5px solid var(--st-pending-accent) !important;
+    /* 仮説任意カラーテーマ（10色） */
+    .hypo-color-sky {
+      background-color: var(--hc-sky-bg) !important;
+      border-color: var(--hc-sky-border) !important;
+      border-left: 6px solid var(--hc-sky-accent) !important;
+    }
+    .hypo-color-sky .hypo-accent { color: var(--hc-sky-color) !important; }
+
+    .hypo-color-orange {
+      background-color: var(--hc-orange-bg) !important;
+      border-color: var(--hc-orange-border) !important;
+      border-left: 6px solid var(--hc-orange-accent) !important;
+    }
+    .hypo-color-orange .hypo-accent { color: var(--hc-orange-color) !important; }
+
+    .hypo-color-emerald {
+      background-color: var(--hc-emerald-bg) !important;
+      border-color: var(--hc-emerald-border) !important;
+      border-left: 6px solid var(--hc-emerald-accent) !important;
+    }
+    .hypo-color-emerald .hypo-accent { color: var(--hc-emerald-color) !important; }
+
+    .hypo-color-violet {
+      background-color: var(--hc-violet-bg) !important;
+      border-color: var(--hc-violet-border) !important;
+      border-left: 6px solid var(--hc-violet-accent) !important;
+    }
+    .hypo-color-violet .hypo-accent { color: var(--hc-violet-color) !important; }
+
+    .hypo-color-rose {
+      background-color: var(--hc-rose-bg) !important;
+      border-color: var(--hc-rose-border) !important;
+      border-left: 6px solid var(--hc-rose-accent) !important;
+    }
+    .hypo-color-rose .hypo-accent { color: var(--hc-rose-color) !important; }
+
+    .hypo-color-indigo {
+      background-color: var(--hc-indigo-bg) !important;
+      border-color: var(--hc-indigo-border) !important;
+      border-left: 6px solid var(--hc-indigo-accent) !important;
+    }
+    .hypo-color-indigo .hypo-accent { color: var(--hc-indigo-color) !important; }
+
+    .hypo-color-teal {
+      background-color: var(--hc-teal-bg) !important;
+      border-color: var(--hc-teal-border) !important;
+      border-left: 6px solid var(--hc-teal-accent) !important;
+    }
+    .hypo-color-teal .hypo-accent { color: var(--hc-teal-color) !important; }
+
+    .hypo-color-amber {
+      background-color: var(--hc-amber-bg) !important;
+      border-color: var(--hc-amber-border) !important;
+      border-left: 6px solid var(--hc-amber-accent) !important;
+    }
+    .hypo-color-amber .hypo-accent { color: var(--hc-amber-color) !important; }
+
+    .hypo-color-cyan {
+      background-color: var(--hc-cyan-bg) !important;
+      border-color: var(--hc-cyan-border) !important;
+      border-left: 6px solid var(--hc-cyan-accent) !important;
+    }
+    .hypo-color-cyan .hypo-accent { color: var(--hc-cyan-color) !important; }
+
+    .hypo-color-magenta {
+      background-color: var(--hc-magenta-bg) !important;
+      border-color: var(--hc-magenta-border) !important;
+      border-left: 6px solid var(--hc-magenta-accent) !important;
+    }
+    .hypo-color-magenta .hypo-accent { color: var(--hc-magenta-color) !important; }
+
+    /* 本日分の日次有無バッジ（大型化） */
+    .daily-presence-tag {
+      font-size: 14px;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 8px;
+      white-space: nowrap;
+      line-height: 1.2;
+      letter-spacing: 0.02em;
     }
 
-    .status-theme-実験中 {
-      background-color: var(--st-active-bg) !important;
-      border-color: var(--st-active-border) !important;
-      border-left: 5px solid var(--st-active-accent) !important;
+    .daily-presence-tag.has-daily {
+      background: #E0F2FE;
+      color: #0369A1;
+      border: 1.5px solid #38BDF8;
     }
 
-    .status-theme-実験済み {
-      background-color: var(--st-done-bg) !important;
-      border-color: var(--st-done-border) !important;
-      border-left: 5px solid var(--st-done-accent) !important;
+    .daily-presence-tag.no-daily {
+      background: #FEF2F2;
+      color: #DC2626;
+      border: 1.5px solid #F87171;
     }
-
-    .status-theme-保留 {
-      background-color: var(--st-hold-bg) !important;
-      border-color: var(--st-hold-border) !important;
-      border-left: 5px solid var(--st-hold-accent) !important;
-    }
-
-    .status-accent-未着手 { color: var(--st-pending-color) !important; }
-    .status-accent-実験中 { color: var(--st-active-color) !important; }
-    .status-accent-実験済み { color: var(--st-done-color) !important; }
-    .status-accent-保留 { color: var(--st-hold-color) !important; }
 
     /* フィルターエリア */
     .filter-panel {
@@ -658,6 +819,15 @@
       font-weight: 700;
       color: var(--text-main);
       margin: 0;
+    }
+
+    .hypo-card-badges {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+      flex-wrap: wrap;
+      justify-content: flex-end;
     }
 
     .hypo-meta-grid {
@@ -949,6 +1119,15 @@
 
     <!-- ① 日次ページ（初期画面） -->
     <section id="view-daily" class="view-section active" aria-label="日次ページ">
+      <!-- 日次画面の上部：今月のテーマ -->
+      <div id="monthlyThemeBanner" class="monthly-theme-banner" role="button" tabindex="0" title="タップして今月のテーマを編集">
+        <div class="monthly-theme-top">
+          <span id="monthlyThemeMonthLabel" class="monthly-theme-label">🎯 今月のテーマ</span>
+          <span class="monthly-theme-edit-hint">✏️ 編集</span>
+        </div>
+        <div id="monthlyThemeText" class="monthly-theme-text is-empty">タップして今月のテーマを設定しましょう</div>
+      </div>
+
       <!-- 日時だけが表示されるヘッダー -->
       <div class="datetime-hero" aria-live="polite">
         <div class="datetime-hero-label">CURRENT TIMESTAMP</div>
@@ -1047,6 +1226,11 @@
                 <option value="保留">保留（緑）</option>
               </select>
             </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="quickHypoColor">仮説カラー（全10色から選択）</label>
+            <select id="quickHypoColor"></select>
           </div>
 
           <div class="form-group">
@@ -1204,7 +1388,7 @@
           <!-- 自動抽出：日々の結果からの課題（編集して新規仮説登録） -->
           <div class="extracted-box" style="background:#F0F9FF; border-color:#BAE6FD;">
             <strong style="font-size:13px; color:#0C4A6E;">🧩 抽出された「課題」を編集して新しい仮説を登録</strong>
-            <div class="form-hint">課題文を直接編集してから「この課題を新しい仮説として登録」を押すと、確認モーダルを経て新規仮説（未着手・現在日時）として追加されます。</div>
+            <div class="form-hint">課題文を直接編集してから「この課題を新しい仮説として登録」を押すと、元の仮説と同じカラーを引き継いだ新規仮説（未着手・現在日時）として追加されます。</div>
             <ul id="extractedIssueList" class="extracted-list"></ul>
           </div>
         </div>
@@ -1271,11 +1455,26 @@
       const LEGACY_KEYS = ["sa_note_data", "sa_note_v0"];
       const SCHEMA_VERSION = 1;
 
+      const HYPO_COLORS = [
+        { id: "sky", label: "① スカイブルー（青系）", swatch: "🟦" },
+        { id: "orange", label: "② オレンジ（橙系）", swatch: "🟧" },
+        { id: "emerald", label: "③ エメラルド（緑系）", swatch: "🟩" },
+        { id: "violet", label: "④ バイオレット（紫系）", swatch: "🟪" },
+        { id: "rose", label: "⑤ ローズ（赤系）", swatch: "🟥" },
+        { id: "indigo", label: "⑥ インディゴ（藍系）", swatch: "🔷" },
+        { id: "teal", label: "⑦ ティール（青緑系）", swatch: "🌊" },
+        { id: "amber", label: "⑧ アンバー（琥珀系）", swatch: "🟨" },
+        { id: "cyan", label: "⑨ シアン（水色系）", swatch: "🩵" },
+        { id: "magenta", label: "⑩ マゼンタ（紅紫系）", swatch: "🩷" }
+      ];
+      const VALID_COLOR_IDS = new Set(HYPO_COLORS.map((c) => c.id));
+
       function createInitialStore() {
         return {
           version: SCHEMA_VERSION,
+          monthlyThemes: {},
           hypotheses: [],
-          scheduledPlans: [] // { id, targetDate (YYYY-MM-DD), planText, hypoId, hypoTitle, done, createdAt }
+          scheduledPlans: []
         };
       }
 
@@ -1291,6 +1490,7 @@
           title: String(raw.title || "無題の仮説"),
           content: String(raw.content || ""),
           status: ["未着手", "実験中", "実験済み", "保留"].includes(raw.status) ? raw.status : "未着手",
+          color: VALID_COLOR_IDS.has(raw.color) ? raw.color : "sky",
           experiment: {
             startDate: expRaw.startDate ? String(expRaw.startDate) : "",
             endDate: expRaw.endDate ? String(expRaw.endDate) : "",
@@ -1353,8 +1553,14 @@
               ? parsed.hypotheses
               : [];
           const plansList = Array.isArray(parsed.scheduledPlans) ? parsed.scheduledPlans : [];
+          const themesObj =
+            parsed.monthlyThemes && typeof parsed.monthlyThemes === "object" && !Array.isArray(parsed.monthlyThemes)
+              ? parsed.monthlyThemes
+              : {};
+
           const normalized = {
             version: SCHEMA_VERSION,
+            monthlyThemes: themesObj,
             hypotheses: list.map(normalizeHypothesis).filter(Boolean),
             scheduledPlans: plansList.map(normalizeScheduledPlan).filter(Boolean)
           };
@@ -1369,6 +1575,8 @@
       function saveStore(data) {
         const payload = {
           version: SCHEMA_VERSION,
+          monthlyThemes:
+            data.monthlyThemes && typeof data.monthlyThemes === "object" ? data.monthlyThemes : {},
           hypotheses: Array.isArray(data.hypotheses) ? data.hypotheses : [],
           scheduledPlans: Array.isArray(data.scheduledPlans) ? data.scheduledPlans : []
         };
@@ -1401,7 +1609,21 @@
         return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
       }
 
-      // 基準となる日時文字列（datetime-local）の翌日（YYYY-MM-DD）を返す
+      function getTodayDateStr() {
+        return formatDateInputFromDate(new Date());
+      }
+
+      function getCurrentMonthKey() {
+        const now = new Date();
+        const pad = (n) => String(n).padStart(2, "0");
+        return `${now.getFullYear()}-${pad(now.getMonth() + 1)}`;
+      }
+
+      function getCurrentMonthLabel() {
+        const now = new Date();
+        return `${now.getFullYear()}年${now.getMonth() + 1}月`;
+      }
+
       function getNextDayDateStr(dtLocalStr) {
         const base = dtLocalStr ? new Date(dtLocalStr) : new Date();
         if (Number.isNaN(base.getTime())) {
@@ -1413,13 +1635,20 @@
         return formatDateInputFromDate(next);
       }
 
-      // 日次入力欄の「記録日時」から日次の日付（YYYY-MM-DD）を取得
       function getDailyTargetDateStr() {
         const dtVal = document.getElementById("dailyLogDate")?.value || "";
         if (dtVal && dtVal.length >= 10) {
           return dtVal.slice(0, 10);
         }
-        return formatDateInputFromDate(new Date());
+        return getTodayDateStr();
+      }
+
+      function hasDailyLogForToday(hypo) {
+        const todayStr = getTodayDateStr();
+        return (hypo.dailyLogs || []).some((log) => {
+          const rec = String(log.recordedAt || "");
+          return rec.slice(0, 10) === todayStr;
+        });
       }
 
       function formatHeroNow() {
@@ -1482,6 +1711,19 @@
         return safe.replace(re, `<mark class="search-hit">$1</mark>`).replace(/\r?\n/g, "<br>");
       }
 
+      function buildColorSelectOptionsHtml(selectedColor) {
+        const activeId = VALID_COLOR_IDS.has(selectedColor) ? selectedColor : "sky";
+        return HYPO_COLORS.map((c) => {
+          const sel = c.id === activeId ? "selected" : "";
+          return `<option value="${escapeHtml(c.id)}" ${sel}>${escapeHtml(`${c.swatch} ${c.label}`)}</option>`;
+        }).join("");
+      }
+
+      function getColorLabel(colorId) {
+        const found = HYPO_COLORS.find((c) => c.id === colorId) || HYPO_COLORS[0];
+        return `${found.swatch} ${found.label}`;
+      }
+
       let toastTimer = null;
       function showToast(message) {
         const el = document.getElementById("toast");
@@ -1539,8 +1781,71 @@
       });
 
       // =========================================================================
-      // 4. ① 日次ページ（実施予定一覧・本日の実施・成果重み付け・明日の予定）& ② 仮説登録
+      // 4. ① 日次ページ（今月のテーマ・実施予定一覧・本日の実施・成果・明日の予定）& ② 仮説登録
       // =========================================================================
+      function renderMonthlyThemeBanner() {
+        const monthKey = getCurrentMonthKey();
+        const monthLabel = getCurrentMonthLabel();
+        const themeVal = String(store.monthlyThemes?.[monthKey] || "").trim();
+
+        const labelEl = document.getElementById("monthlyThemeMonthLabel");
+        const textEl = document.getElementById("monthlyThemeText");
+
+        if (labelEl) labelEl.textContent = `🎯 今月のテーマ（${monthLabel}）`;
+        if (textEl) {
+          if (themeVal) {
+            textEl.textContent = themeVal;
+            textEl.classList.remove("is-empty");
+          } else {
+            textEl.textContent = "タップして今月のテーマを設定しましょう";
+            textEl.classList.add("is-empty");
+          }
+        }
+      }
+
+      function openMonthlyThemeModal() {
+        const monthKey = getCurrentMonthKey();
+        const monthLabel = getCurrentMonthLabel();
+        const currentTheme = String(store.monthlyThemes?.[monthKey] || "");
+
+        openModal(`今月のテーマ（${monthLabel}）`, `
+          <form id="monthlyThemeForm">
+            <div class="form-group">
+              <label class="form-label" for="monthlyThemeInput">${escapeHtml(monthLabel)}のテーマ</label>
+              <input type="text" id="monthlyThemeInput" value="${escapeHtml(currentTheme)}" placeholder="例：再現性の確立と高速化に集中する" />
+              <div class="form-hint">日次画面の上部に表示されます。空にして保存すると未設定に戻ります。</div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">テーマを保存する</button>
+          </form>
+        `);
+
+        document.getElementById("monthlyThemeForm").addEventListener("submit", (e) => {
+          e.preventDefault();
+          const val = document.getElementById("monthlyThemeInput").value.trim();
+          if (!store.monthlyThemes || typeof store.monthlyThemes !== "object") {
+            store.monthlyThemes = {};
+          }
+          if (val) {
+            store.monthlyThemes[monthKey] = val;
+          } else {
+            delete store.monthlyThemes[monthKey];
+          }
+          saveStore(store);
+          renderMonthlyThemeBanner();
+          closeModal();
+          showToast("今月のテーマを保存しました");
+        });
+      }
+
+      const monthlyBannerEl = document.getElementById("monthlyThemeBanner");
+      monthlyBannerEl.addEventListener("click", openMonthlyThemeModal);
+      monthlyBannerEl.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          openMonthlyThemeModal();
+        }
+      });
+
       function updateHeroClock() {
         const el = document.getElementById("heroNowDisplay");
         if (el) el.textContent = formatHeroNow();
@@ -1611,6 +1916,7 @@
       }
 
       function refreshDailyForm() {
+        renderMonthlyThemeBanner();
         const nowLocal = getNowDateTimeLocal();
         const logDateInput = document.getElementById("dailyLogDate");
         logDateInput.value = nowLocal;
@@ -1652,6 +1958,9 @@
         const nowLocal = getNowDateTimeLocal();
         document.getElementById("quickHypoDate").value = nowLocal;
         document.getElementById("quickExpStart").value = nowLocal;
+        const colorSelect = document.getElementById("quickHypoColor");
+        const currentVal = VALID_COLOR_IDS.has(colorSelect.value) ? colorSelect.value : "sky";
+        colorSelect.innerHTML = buildColorSelectOptionsHtml(currentVal);
       }
 
       document.getElementById("btnToggleQuickExp").addEventListener("click", () => {
@@ -1695,7 +2004,6 @@
           other
         });
 
-        // 明日の実施予定が入力されていれば、指定された実施日の予定リストへ登録
         if (tomorrowPlan) {
           store.scheduledPlans.unshift({
             id: generateId("plan"),
@@ -1728,6 +2036,7 @@
         e.preventDefault();
         const occurredAt = document.getElementById("quickHypoDate").value || getNowDateTimeLocal();
         const status = document.getElementById("quickHypoStatus").value;
+        const color = document.getElementById("quickHypoColor").value || "sky";
         const title = document.getElementById("quickHypoTitle").value.trim();
         const content = document.getElementById("quickHypoContent").value.trim();
         const startDate = document.getElementById("quickExpStart").value;
@@ -1742,6 +2051,7 @@
           title,
           content,
           status,
+          color,
           experiment: {
             startDate,
             endDate,
@@ -2036,13 +2346,22 @@
           .map((h) => {
             const exp = h.experiment || {};
             const st = escapeHtml(h.status);
+            const colorClass = `hypo-color-${VALID_COLOR_IDS.has(h.color) ? h.color : "sky"}`;
+            const hasToday = hasDailyLogForToday(h);
+            const dailyBadgeHtml = hasToday
+              ? `<span class="daily-presence-tag has-daily">【日次有】</span>`
+              : `<span class="daily-presence-tag no-daily">【日次無】</span>`;
+
             return `
-              <article class="hypo-card status-theme-${st}" data-id="${escapeHtml(h.id)}">
+              <article class="hypo-card ${colorClass}" data-id="${escapeHtml(h.id)}">
                 <div class="hypo-card-top">
                   <h3 class="hypo-card-title">${highlightTextHtml(h.title, query)}</h3>
-                  <span class="badge badge-${st}">${st}</span>
+                  <div class="hypo-card-badges">
+                    ${dailyBadgeHtml}
+                    <span class="badge badge-${st}">${st}</span>
+                  </div>
                 </div>
-                ${exp.content ? `<div style="font-size:13px; color:var(--text-main); margin-top:4px;"><strong class="status-accent-${st}">実験内容：</strong>${highlightTextHtml(exp.content, query)}</div>` : ""}
+                ${exp.content ? `<div style="font-size:13px; color:var(--text-main); margin-top:4px;"><strong class="hypo-accent">実験内容：</strong>${highlightTextHtml(exp.content, query)}</div>` : ""}
                 <div class="hypo-meta-grid">
                   <div class="hypo-meta-item"><strong>発生日：</strong>${escapeHtml(formatDisplayDateTime(h.occurredAt))}</div>
                   <div class="hypo-meta-item"><strong>完了日：</strong>${escapeHtml(exp.completedAt ? formatDisplayDateTime(exp.completedAt) : "未完了")}</div>
@@ -2226,15 +2545,20 @@
         const nowLocal = getNowDateTimeLocal();
         const firstLine = issueText.split(/\r?\n/)[0].trim();
         const shortTitle = firstLine.length > 36 ? `${firstLine.slice(0, 36)}…` : firstLine;
+        const inheritedColor = VALID_COLOR_IDS.has(sourceHypo.color) ? sourceHypo.color : "sky";
 
         openModal("課題から新しい仮説を登録", `
           <form id="promoteIssueForm">
             <div class="form-hint" style="margin-bottom:10px;">
-              元仮説「${escapeHtml(sourceHypo.title)}」の課題から新規仮説を作成します（初期区分：未着手・黄色）。
+              元仮説「${escapeHtml(sourceHypo.title)}」の課題から新規仮説を作成します（初期区分：未着手／カラー初期値：${escapeHtml(getColorLabel(inheritedColor))}）。
             </div>
             <div class="form-group">
               <label class="form-label" for="promoOccuredAt">発生日（現在日時）</label>
               <input type="datetime-local" id="promoOccuredAt" value="${escapeHtml(nowLocal)}" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="promoHypoColor">仮説カラー（初期値：元仮説と同じ色）</label>
+              <select id="promoHypoColor">${buildColorSelectOptionsHtml(inheritedColor)}</select>
             </div>
             <div class="form-group">
               <label class="form-label" for="promoTitle">仮説タイトル</label>
@@ -2250,12 +2574,14 @@
 
         document.getElementById("promoteIssueForm").addEventListener("submit", (e) => {
           e.preventDefault();
+          const chosenColor = document.getElementById("promoHypoColor").value || inheritedColor;
           const newHypo = normalizeHypothesis({
             id: generateId("hyp"),
             occurredAt: document.getElementById("promoOccuredAt").value || getNowDateTimeLocal(),
             title: document.getElementById("promoTitle").value.trim(),
             content: document.getElementById("promoContent").value.trim(),
             status: "未着手",
+            color: chosenColor,
             experiment: { startDate: "", endDate: "", content: "", completedAt: "" },
             dailyLogs: [],
             conclusion: { finalOutcome: "", summary: "", updatedAt: "" }
@@ -2291,6 +2617,7 @@
         const conc = hypo.conclusion || {};
         const logs = Array.isArray(hypo.dailyLogs) ? hypo.dailyLogs : [];
         const st = escapeHtml(hypo.status);
+        const colorClass = `hypo-color-${VALID_COLOR_IDS.has(hypo.color) ? hypo.color : "sky"}`;
 
         const logsHtml =
           logs.length === 0
@@ -2318,25 +2645,25 @@
                 .join("");
 
         container.innerHTML = `
-          <!-- 仮説基本情報（区分カラー反映） -->
-          <div class="card status-theme-${st}">
+          <!-- 仮説基本情報 -->
+          <div class="card ${colorClass}">
             <div class="card-header">
-              <h2 class="card-title status-accent-${st}">💡 仮説情報</h2>
+              <h2 class="card-title hypo-accent">💡 仮説情報</h2>
               <span class="badge badge-${st}">${st}</span>
             </div>
             <div class="form-hint" style="margin-top:0; margin-bottom:6px;">発生日：${escapeHtml(formatDisplayDateTime(hypo.occurredAt))}</div>
             <h3 style="margin:0 0 8px; font-size:18px;">${escapeHtml(hypo.title)}</h3>
             <div style="font-size:14px; color:var(--text-sub);">${nl2brSafe(hypo.content || "（仮説内容の記載なし）")}</div>
             <div class="action-row">
-              <button type="button" id="btnEditHypo" class="btn btn-secondary btn-sm">仮説を編集</button>
+              <button type="button" id="btnEditHypo" class="btn btn-secondary btn-sm">仮説・カラーを編集</button>
               <button type="button" id="btnDeleteHypo" class="btn btn-danger btn-sm">仮説を削除</button>
             </div>
           </div>
 
-          <!-- 実験情報（区分カラー反映） -->
-          <div class="card status-theme-${st}">
+          <!-- 実験情報 -->
+          <div class="card ${colorClass}">
             <div class="card-header">
-              <h2 class="card-title status-accent-${st}">🔬 実験情報</h2>
+              <h2 class="card-title hypo-accent">🔬 実験情報</h2>
               <span class="badge badge-${st}">${st}</span>
             </div>
             <div class="log-kv"><span class="log-kv-label">実施期間：</span>${escapeHtml(formatPeriod(exp.startDate, exp.endDate))}</div>
@@ -2373,7 +2700,8 @@
         `;
 
         document.getElementById("btnEditHypo").addEventListener("click", () => {
-          openModal("仮説の編集", `
+          const currentColor = VALID_COLOR_IDS.has(hypo.color) ? hypo.color : "sky";
+          openModal("仮説・カラーの編集", `
             <form id="editHypoForm">
               <div class="grid-2">
                 <div class="form-group">
@@ -2391,6 +2719,10 @@
                 </div>
               </div>
               <div class="form-group">
+                <label class="form-label" for="editHypoColor">仮説カラー（全10色から選択）</label>
+                <select id="editHypoColor">${buildColorSelectOptionsHtml(currentColor)}</select>
+              </div>
+              <div class="form-group">
                 <label class="form-label" for="editHypoTitle">仮説タイトル</label>
                 <input type="text" id="editHypoTitle" value="${escapeHtml(hypo.title)}" required />
               </div>
@@ -2406,6 +2738,7 @@
             e.preventDefault();
             hypo.occurredAt = document.getElementById("editHypoOcc").value;
             hypo.status = document.getElementById("editHypoStatus").value;
+            hypo.color = document.getElementById("editHypoColor").value || "sky";
             hypo.title = document.getElementById("editHypoTitle").value.trim();
             hypo.content = document.getElementById("editHypoContent").value.trim();
             saveStore(store);
@@ -2690,8 +3023,13 @@
                   ? parsed.hypotheses
                   : [];
               const plansList = Array.isArray(parsed.scheduledPlans) ? parsed.scheduledPlans : [];
+              const themesObj =
+                parsed.monthlyThemes && typeof parsed.monthlyThemes === "object" && !Array.isArray(parsed.monthlyThemes)
+                  ? parsed.monthlyThemes
+                  : {};
               store = {
                 version: SCHEMA_VERSION,
+                monthlyThemes: themesObj,
                 hypotheses: list.map(normalizeHypothesis).filter(Boolean),
                 scheduledPlans: plansList.map(normalizeScheduledPlan).filter(Boolean)
               };
